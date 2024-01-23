@@ -78,6 +78,10 @@ int32_t A2B2Speaker::isChannelSupported(uint32_t numChannels)
         case CHANNELS_3:
         case CHANNELS_4:
         case CHANNELS_8:
+        case CHANNELS_10:
+        case CHANNELS_12:
+        case CHANNELS_14:
+        case CHANNELS_16:
             break;
         default:
             rc = -EINVAL;
