@@ -26,10 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #define ATRACE_TAG (ATRACE_TAG_AUDIO | ATRACE_TAG_HAL)
@@ -168,7 +167,18 @@ int32_t SoundTriggerEngineGsl::StartBuffering(StreamSoundTrigger *s) {
 
     PAL_DBG(LOG_TAG, "Enter");
     UpdateState(ENG_BUFFERING);
-    s->getBufInfo(&input_buf_size, &input_buf_num, nullptr, nullptr);
+    /*
+     * input buf size/num are used to calculate sleep time
+     * for real time data reading. When mmap is enabled for
+     * VoiceUI, use default value for input buf size/num to
+     * avoid long sleep time which is unexpected.
+     */
+    if (mmap_buffer_size_ != 0) {
+        input_buf_size = BUF_SIZE_CAPTURE;
+        input_buf_num = NO_OF_BUF;
+    } else {
+        s->getBufInfo(&input_buf_size, &input_buf_num, nullptr, nullptr);
+    }
     sleep_ms = (input_buf_size * input_buf_num) *
         BITS_PER_BYTE * MS_PER_SEC / (sample_rate_ * bit_width_ * channels_);
 
