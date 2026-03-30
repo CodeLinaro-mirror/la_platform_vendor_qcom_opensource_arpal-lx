@@ -235,6 +235,15 @@
             <!--channel 2 -> Vsen Right -->
             <!--channel 3 -> Isen Right -->
         </in-device>
+        <in-device>
+            <id>PAL_DEVICE_IN_DUMMY</id>
+            <back_end_name>PCM_DUMMY-TX-1</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <snd_device_name>dummy-dev</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
+        </in-device>
         <out-device>
             <id>PAL_DEVICE_OUT_SOUND_DOSE</id>
             <back_end_name>PCM_DUMMY-RX-0</back_end_name>
@@ -323,6 +332,15 @@
                 <name>PAL_STREAM_VOICE_CALL</name>
                 <priority>1</priority>
         </usecase>
+        </out-device>
+        <out-device>
+            <id>PAL_DEVICE_OUT_DUMMY</id>
+            <back_end_name>PCM_DUMMY-RX-0</back_end_name>
+            <max_channels>2</max_channels>
+            <channels>2</channels>
+            <snd_device_name>dummy-dev</snd_device_name>
+            <samplerate>48000</samplerate>
+            <bit_width>16</bit_width>
         </out-device>
     </device_profile>
     <in_streams>
