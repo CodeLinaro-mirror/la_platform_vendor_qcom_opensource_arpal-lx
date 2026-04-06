@@ -531,6 +531,7 @@ int Device::close()
            deviceStartStopCount = 0;
            if(rm->num_proxy_channels != 0)
                rm->num_proxy_channels = 0;
+           onDeviceClose();
        }
     }
     PAL_INFO(LOG_TAG, "Exit. deviceCount %d for device id %d (%s), exit status %d", deviceCount,

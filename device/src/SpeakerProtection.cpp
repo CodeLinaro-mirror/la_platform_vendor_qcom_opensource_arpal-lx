@@ -1238,6 +1238,7 @@ SpeakerProtection::SpeakerProtection(struct pal_device *device,
     spkrProcessingState = SPKR_PROCESSING_IN_IDLE;
 
     isSpkrInUse = false;
+    isCpsConfigured = false;
 
     calibrationCallbackStatus = 0;
     mDspCallbackRcvd = false;
@@ -2114,10 +2115,14 @@ int32_t SpeakerProtection::spkrProtProcessingMode(bool flag)
             case 1:
                 goto cps_dev_setup;
             case 2:
-
-                // wsa883x specific cps payload
-                updateCpsCustomPayload(miid);
-
+                /* Only call updateCpsCustomPayload() when this is the first
+                 * stream using the device. For subsequent streams, or on resume,
+                 * the CPS params are already configured in the DSP and must not be re-sent
+                 * */
+                if (!isCpsConfigured) {
+                    updateCpsCustomPayload(miid);
+                    isCpsConfigured = true;
+                }
            default:
                 // Free up the local variables
                 goto exit;
@@ -2543,13 +2548,27 @@ int SpeakerProtection::start()
     return 0;
 }
 
+void SpeakerProtection::onDeviceClose()
+{
+    if (numberOfRequest != 0)
+        PAL_ERR(LOG_TAG, "numberOfRequest=%d at device close, expected 0 — start/stop mismatch detected", numberOfRequest);
+    isCpsConfigured = false;
+}
+
 int SpeakerProtection::stop()
 {
     PAL_DBG(LOG_TAG, "Inside Speaker Protection stop");
+
     Device::stop();
     if (ResourceManager::isVIRecordStarted) {
         PAL_DBG(LOG_TAG, "record running so no need to proceed");
         ResourceManager::isVIRecordStarted = false;
+        /*
+         * Decrement numberOfRequest here to keep the counter balanced without tearing down
+         * the active VI/TX path owned by the calibration thread.
+         */
+        if (numberOfRequest > 0)
+            numberOfRequest--;
         return 0;
     }
     spkrProtProcessingMode(false);
