@@ -118,6 +118,12 @@ LOCAL_SHARED_LIBRARIES := \
     libarmemlog \
     libhidlbase
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_STATIC_LIBRARIES := libplugin_manager
 
 #used for static compilation

@@ -50,6 +50,36 @@
 
 extern uint32_t pal_log_lvl;
 
+#ifdef ENABLE_DLOG
+#undef FALLBACK_LOG
+#define FALLBACK_LOG(alog_fn, fmt, ...)                                   \
+    alog_fn("%s: %d: " fmt, __func__, __LINE__, ##__VA_ARGS__)
+
+#include "dlog.h"
+
+#define PAL_FATAL(log_tag, arg, ...)                                      \
+    if (pal_log_lvl & PAL_LOG_ERR) {                              \
+        UPL_LOG(ALOGE, arg, ##__VA_ARGS__);                       \
+        abort();                                                  \
+    }
+
+#define PAL_ERR(log_tag, arg, ...)                                        \
+    if (pal_log_lvl & PAL_LOG_ERR) {                              \
+        UPL_LOG(ALOGE, arg, ##__VA_ARGS__);                       \
+    }
+#define PAL_DBG(log_tag, arg, ...)                                        \
+    if (pal_log_lvl & PAL_LOG_DBG) {                              \
+        UPL_LOG(ALOGD, arg, ##__VA_ARGS__);                       \
+    }
+#define PAL_INFO(log_tag, arg, ...)                                       \
+    if (pal_log_lvl & PAL_LOG_INFO) {                             \
+        UPL_LOG(ALOGI, arg, ##__VA_ARGS__);                       \
+    }
+#define PAL_VERBOSE(log_tag, arg, ...)                                    \
+    if (pal_log_lvl & PAL_LOG_VERBOSE) {                          \
+        UPL_LOG(ALOGV, arg, ##__VA_ARGS__);                       \
+    }
+#else
 #define PAL_FATAL(log_tag, arg,...)                                       \
     if (pal_log_lvl & PAL_LOG_ERR) {                              \
         ALOGE("%s: %d: "  arg, __func__, __LINE__, ##__VA_ARGS__);\
@@ -72,3 +102,4 @@ extern uint32_t pal_log_lvl;
     if (pal_log_lvl & PAL_LOG_VERBOSE) {                          \
         ALOGV("%s: %d: "  arg, __func__, __LINE__, ##__VA_ARGS__);\
     }
+#endif

@@ -77,6 +77,12 @@ LOCAL_HEADER_LIBRARIES := \
     plugin_manager_headers \
     libsession_voice_headers
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_default_plugin_controls
 LOCAL_MODULE_OWNER := qti
@@ -129,6 +135,12 @@ LOCAL_HEADER_LIBRARIES := \
     libsession_ar_headers \
     plugin_manager_headers \
     liblisten_headers
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_default_set_param_plugin_controls
