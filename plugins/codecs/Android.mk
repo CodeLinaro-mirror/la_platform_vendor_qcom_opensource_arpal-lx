@@ -10,7 +10,7 @@ LOCAL_SRC_FILES := \
     bt_base.c \
     bt_bundle.c
 
-LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-all -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
 ifeq ($(strip $(AUDIO_FEATURE_ENABLE_BT_A2DP_LPI)),true)
 LOCAL_CFLAGS += -DBT_A2DP_LPI_ENABLED
@@ -48,7 +48,7 @@ LOCAL_SRC_FILES := \
     bt_base.c \
     bt_aptx.c
 
-LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-all -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
@@ -81,7 +81,7 @@ LOCAL_SRC_FILES := \
     bt_base.c \
     bt_ble.c
 
-LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-strong -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+LOCAL_CFLAGS += -Wall -Werror -O2 -fvisibility=hidden -fstack-protector-all -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
 
 LOCAL_SHARED_LIBRARIES := \
     libcutils \
