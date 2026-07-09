@@ -26,10 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 /** \file pal_defs.h
@@ -1084,7 +1083,7 @@ typedef enum {
 
 /** HDMI/DP */
 // START: MST ==================================================
-#define MAX_CONTROLLERS 1
+#define MAX_CONTROLLERS 2
 #define MAX_STREAMS_PER_CONTROLLER 2
 // END: MST ==================================================
 
