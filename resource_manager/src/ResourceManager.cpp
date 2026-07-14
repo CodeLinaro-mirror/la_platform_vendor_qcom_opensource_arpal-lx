@@ -10355,6 +10355,8 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     std::vector <Stream *> streamsToSwitch;
     std::vector <Stream*>::iterator sIter;
     std::vector <Stream *> tempMutedStreams;
+    std::list <struct pal_device> originalDevAttrs;
+    std::set <Stream *> scheduledStreams;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -10418,6 +10420,135 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     }
 
     getSharedBEActiveStreamDevs(sharedBEStreamDev, dev->getSndDeviceId());
+    {
+        bool isCallActive = false;
+        for (auto& s : mActiveStreams) {
+            pal_stream_type_t type;
+            if (s->getStreamType(&type) == 0) {
+                if (type == PAL_STREAM_VOICE_CALL || type == PAL_STREAM_VOIP) {
+                    if (s->getCurState() == STREAM_STARTED) {
+                        isCallActive = true;
+                        break;
+                    }
+                }
+            }
+        }
+        std::vector<Stream *> activeStreams;
+        getActiveStream_l(activeStreams, dev);
+
+        for (auto& str : activeStreams) {
+            if (!isStreamActive(str))
+                continue;
+            std::vector <std::shared_ptr<Device>> assocDevices, palDevices;
+            str->getAssociatedDevices(assocDevices);
+            str->getPalDevices(palDevices);
+            if (assocDevices.empty() || palDevices.empty())
+                continue;
+            for (auto& runningDev : assocDevices) {
+                pal_device_id_t runningDevId = (pal_device_id_t)runningDev->getSndDeviceId();
+
+                // Find if this running device ID matches the device being removed
+                if (runningDevId != dev->getSndDeviceId())
+                    continue;
+
+                // Check if this running device was NOT originally requested (meaning it was force-routed here)
+                bool isOriginallyRequested = false;
+                std::shared_ptr<Device> origDevForRestore = nullptr;
+
+                // Find the corresponding original device to restore to.
+                // If we are force-routed, we pick the first valid palDevice to restore to.
+                for (auto& origDev : palDevices) {
+                    if (origDev) {
+                        if (!origDevForRestore) {
+                            origDevForRestore = origDev; // fallback to first requested device
+                        }
+                        if ((pal_device_id_t)origDev->getSndDeviceId() == runningDevId) {
+                            isOriginallyRequested = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!isCallActive && !isOriginallyRequested && origDevForRestore) {
+                    // Skip restore operation if the original requested device is Dummy
+                    // To avoid misjudgment caused by mPalDevices not being updated in time during a2dpResumeFromDummy()
+                    if ((pal_device_id_t)origDevForRestore->getSndDeviceId() == PAL_DEVICE_OUT_DUMMY) {
+                        PAL_INFO(LOG_TAG, "restoreDevice: Stream %pk's original requested device is Dummy, skipping restore.", str);
+                        continue;
+                    }
+
+                    /*
+                     * Do not independently restore this stream if the shared backend (BE) is
+                     * still actively required by other peer streams.
+                     *
+                     * Forcing an individual restore here would tear the shared backend into a
+                     * heterogeneous state (trying to serve two different device configurations
+                     * simultaneously), leading to routing conflicts and subsequent GSL driver
+                     * errors (gsl_graph_start failed).
+                     *
+                     * By skipping individual restore here (using continue), we defer the routing
+                     * migration. The stream will safely migrate back later once the concurrent
+                     * peer streams finish and the shared backend becomes entirely free.
+                     */
+                    bool backendStillNeeded = false;
+                    std::vector <std::tuple<Stream *, uint32_t>> peerStreamDevs;
+                    getSharedBEActiveStreamDevs(peerStreamDevs, runningDevId);
+                    for (const auto &peer : peerStreamDevs) {
+                        Stream *peerStream = std::get<0>(peer);
+                        std::vector <std::shared_ptr<Device>> peerPalDevices;
+                        if (peerStream == str || !isStreamActive(peerStream))
+                            continue;
+                        peerStream->getPalDevices(peerPalDevices);
+                        // Iterate through all combo devices of the peer stream
+                        for (const auto &peerDev : peerPalDevices) {
+                            if (peerDev && (pal_device_id_t)peerDev->getSndDeviceId() == runningDevId) {
+                                backendStillNeeded = true;
+                                break;
+                            }
+                        }
+
+                        if (backendStillNeeded) {
+                            break;
+                        }
+                    }
+
+                    if (backendStillNeeded) {
+                        PAL_INFO(LOG_TAG, "restoreDevice: Stream %pk: runningDevId %d mismatches originally requested device,"
+                                 " but shared backend of dev %d is still needed by another stream, skip restore.",
+                                 str, runningDevId, runningDevId);
+                        continue;
+                    }
+                    PAL_INFO(LOG_TAG, "restoreDevice: Stream %pk: runningDevId %d mismatches originally requested device. Scheduling restore.",
+                             str, runningDevId);
+
+                    struct pal_device attr = {};
+                    uint32_t originalDevPrio = 0;
+                    status = origDevForRestore->getTopPriorityDeviceAttr(&attr, &originalDevPrio);
+                    if (status == 0) {
+                        if (scheduledStreams.count(str) > 0) {
+                            PAL_INFO(LOG_TAG, "restoreDevice: Stream %pk already scheduled, skip duplicate.", str);
+                        } else {
+                            scheduledStreams.insert(str);
+                            originalDevAttrs.push_back(attr);
+                            PAL_INFO(LOG_TAG, "restoreDevice: Stream %pk: restoring to target device %d with priority %d",
+                                     str, attr.id, originalDevPrio);
+                            streamDevDisconnect.push_back({str, runningDevId});
+                            streamDevConnect.push_back({str, &originalDevAttrs.back()});
+                            if (!rm->increaseStreamUserCounter(str)) {
+                                PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", str);
+                                str->mute(true);
+                                tempMutedStreams.push_back(str);
+                            }
+                        }
+                    } else {
+                          PAL_ERR(LOG_TAG, "restoreDevice: Failed to get top priority device attr for stream %pk, status %d! "
+                                  "Stream remains routed to runningDevId %d",
+                                  str, status, runningDevId);
+                    }
+                }
+            }
+        }
+    }
     if (sharedBEStreamDev.size() > 0) {
         /* check to see if curDevAttr changed, curDevAttr will be updated if switch is needed */
         bool switchStreams = compareSharedBEStreamDevAttr(sharedBEStreamDev, &curDevAttr, false/* disable device */);
@@ -10425,12 +10556,22 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
             /*device switch every stream to new dev attr*/
             for (const auto &elem : sharedBEStreamDev) {
                  sharedStream = std::get<0>(elem);
-                 streamDevDisconnect.push_back({sharedStream,dev->getSndDeviceId()});
-                 streamDevConnect.push_back({sharedStream,&curDevAttr});
-                 if (!rm->increaseStreamUserCounter(sharedStream)) {
-                    PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", sharedStream);
-                    sharedStream->mute(true);
-                    tempMutedStreams.push_back(sharedStream);
+                 /*
+                  * scheduledStreams is shared by both mismatch and shared paths for deduplication.
+                  * Muting and Counter-Increment are strictly bound to scheduling to prevent leaks.
+                  */
+                 if (scheduledStreams.count(sharedStream) == 0) {
+                     scheduledStreams.insert(sharedStream);
+                     streamDevDisconnect.push_back({sharedStream,dev->getSndDeviceId()});
+                     streamDevConnect.push_back({sharedStream,&curDevAttr});
+                     if (!rm->increaseStreamUserCounter(sharedStream)) {
+                         PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", sharedStream);
+                         sharedStream->mute(true);
+                         tempMutedStreams.push_back(sharedStream);
+                     }
+                 } else {
+                     PAL_INFO(LOG_TAG, "restoreDevice: sharedStream %pk already scheduled, skip duplicate.",
+                              sharedStream);
                  }
             }
         }
