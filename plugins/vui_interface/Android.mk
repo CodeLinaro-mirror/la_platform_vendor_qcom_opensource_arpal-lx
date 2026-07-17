@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
@@ -28,3 +29,4 @@ LOCAL_SHARED_LIBRARIES := \
     liblx-osal
 
 include $(BUILD_SHARED_LIBRARY)
+endif

@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -48,4 +49,5 @@ ifeq ($(USE_PAL_STATIC_LINKING_MODULES),true)
     include $(BUILD_STATIC_LIBRARY)
 else
     include $(BUILD_SHARED_LIBRARY)
+endif
 endif

@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH:= $(call my-dir)
 
 #--------------------------------------------
@@ -88,3 +89,4 @@ LOCAL_MODULE := lib_bt_ble
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
+endif

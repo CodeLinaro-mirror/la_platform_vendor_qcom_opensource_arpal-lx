@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 ifneq ($(AUDIO_USE_STUB_HAL), true)
 
 LOCAL_PATH := $(call my-dir)
@@ -256,3 +257,4 @@ include $(PAL_BASE_PATH)/session/Android.mk
 include $(PAL_BASE_PATH)/device/Android.mk
 
 endif #AUDIO_USE_STUB_HAL
+endif

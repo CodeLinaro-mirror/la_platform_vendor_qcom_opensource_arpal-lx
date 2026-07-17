@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -48,3 +49,4 @@ else
 endif
 
 include $(wildcard $(LOCAL_PATH)/*/Android.mk)
+endif

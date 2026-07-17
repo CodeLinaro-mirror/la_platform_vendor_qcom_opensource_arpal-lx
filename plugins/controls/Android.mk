@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH:= $(call my-dir)
 
 LOCAL_CFLAGS += -Wall -Werror
@@ -115,6 +116,7 @@ LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/pal/context_manager/inc
 LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/pal/plugins/PluginManager/inc
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio/include
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
@@ -133,3 +135,4 @@ LOCAL_MODULE := lib_default_set_param_plugin_controls
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
+endif

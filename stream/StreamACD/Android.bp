@@ -1,7 +1,84 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "stream_acd_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
 
+stream_acd_cc_library_headers {
     name: "libstream_acd_headers",
     export_include_dirs: ["inc"],
     vendor: true,
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
 
+cc_library {
+    name: "libstream_acd",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+         "src/StreamACD.cpp",
+         "src/ContextDetectionEngine.cpp",
+         "src/ACDEngine.cpp",
+         ],
+
+    shared_libs: [
+         "liblog",
+         "libcutils",
+         "liblx-osal",
+         "libar-pal",
+         "libexpat",
+         "libar-gsl",
+         "libsession_ar",
+         "libaudioroute",
+         ],
+
+    include_dirs: [
+         "vendor/qcom/opensource/pal/stream/StreamACD/inc",
+         "system/media/audio_route/include",
+         "vendor/qcom/opensource/pal",
+         ],
+
+    cflags: [
+         "-DACD_SM_FILEPATH=\"/vendor/etc/models/acd/\"",
+         ],
+
+    cppflags: [
+         "-fexceptions", "-frtti",
+         ],
+
+    rtti: true,
+
+    header_libs: [
+         "libarpal_headers",
+         "libspf-headers",
+         "libvui_dmgr_headers",
+         "libarvui_intf_headers",
+         "libaudiofeaturestats_headers",
+         "liblisten_headers",
+         "libacdb_headers",
+         "libarpal_internalheaders",
+         "libarmemlog_headers",
+         "libsession_ar_headers",
+         ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }
