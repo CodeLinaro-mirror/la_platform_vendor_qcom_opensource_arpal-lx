@@ -126,6 +126,7 @@ public:
     int setDeviceAttributes(struct pal_device &dattr);
     virtual int getDeviceAttributes(struct pal_device *dattr,
                                     Stream* streamHandle = NULL);
+    virtual void onDeviceClose() {}
     virtual int getCodecConfig(struct pal_media_config *config);
     static std::shared_ptr<Device> getObject(pal_device_id_t dev_id);
     int updateCustomPayload(void *payload, size_t size);

@@ -354,8 +354,7 @@ int32_t  StreamPCM::close()
          */
         for (int32_t i=0; i < mDevices.size(); i++) {
             if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
-                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
+                 (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) && isMMap) {
                 status = mDevices[i]->stop();
                 if (0 != status) {
                     PAL_ERR(LOG_TAG, "BT A2DP/BLE device stop failed with status %d", status);
@@ -468,8 +467,7 @@ int32_t StreamPCM::start()
 
             for (int32_t i=0; i < mDevices.size(); i++) {
                 if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
-                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
+                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) && isMMap) {
                     PAL_DBG(LOG_TAG, "skip BT A2DP/BLE/Speaker device start as it's done already");
                     status = 0;
                     continue;
@@ -741,9 +739,8 @@ int32_t StreamPCM::stop()
 
             for (int32_t i=0; i < mDevices.size(); i++) {
                 if (((mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_A2DP) ||
-                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE) ||
-                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) && isMMap) {
-                    PAL_DBG(LOG_TAG, "skip BT A2DP/BLE/Speaker device stop, to be done in close/disconnect");
+                     (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_BLUETOOTH_BLE)) && isMMap) {
+                    PAL_DBG(LOG_TAG, "skip BT A2DP/BLE device stop, to be done in close/disconnect");
                     status = 0;
                     continue;
                 }
@@ -1747,8 +1744,7 @@ int32_t StreamPCM::createMmapBuffer(int32_t min_size_frames,
     if (currentState == STREAM_INIT) {
         rm->lockGraph();
         for (int32_t i=0; i < mDevices.size(); i++) {
-            if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId()) ||
-                (mDevices[i]->getSndDeviceId() == PAL_DEVICE_OUT_SPEAKER)) {
+            if (rm->isBtDevice((pal_device_id_t) mDevices[i]->getSndDeviceId())) {
                 PAL_DBG(LOG_TAG, "start BT devices as to populate the full GKVs");
                 status = mDevices[i]->start();
                 btDevStarted = !status;

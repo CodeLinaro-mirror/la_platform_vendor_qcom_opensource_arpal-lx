@@ -158,10 +158,12 @@ protected :
     static struct pal_device_info cps_device;
     void *viCustomPayload;
     size_t viCustomPayloadSize;
+    bool isCpsConfigured;
 
 private :
 
 public:
+    void onDeviceClose() override;
     static std::thread mCalThread;
     static std::thread viTxSetupThread;
     static std::condition_variable cv;
