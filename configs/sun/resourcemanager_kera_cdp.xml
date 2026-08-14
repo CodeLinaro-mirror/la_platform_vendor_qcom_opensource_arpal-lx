@@ -425,7 +425,7 @@
             <channels>1</channels>
             <samplerate>8000</samplerate>
             <bit_width>16</bit_width>
-            <bt_i2s_sd_line_idx>1</bt_i2s_sd_line_idx>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <snd_device_name>bt-sco-mic</snd_device_name>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
@@ -597,6 +597,7 @@
             <snd_device_name>bt-a2dp-mic</snd_device_name>
             <samplerate>48000</samplerate>
             <bit_width>16</bit_width>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
         </in-device>
         <in-device>
             <id>PAL_DEVICE_IN_BLUETOOTH_BLE</id>
@@ -606,6 +607,7 @@
             <snd_device_name>bt-ble-mic</snd_device_name>
             <samplerate>44100</samplerate>
             <bit_width>16</bit_width>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <usecase>
                 <name>PAL_STREAM_LOW_LATENCY</name>
             </usecase>
@@ -872,7 +874,7 @@
         <out-device>
             <id>PAL_DEVICE_OUT_BLUETOOTH_A2DP</id>
             <back_end_name>BTFM_PROXY-RX-0</back_end_name>
-	    <bt_i2s_sd_line_idx>2</bt_i2s_sd_line_idx>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <snd_device_name>bt-a2dp</snd_device_name>
@@ -886,6 +888,7 @@
         <out-device>
             <id>PAL_DEVICE_OUT_BLUETOOTH_BLE</id>
             <back_end_name>BTFM_PROXY-RX-0</back_end_name>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <max_channels>1</max_channels>
             <channels>1</channels>
             <snd_device_name>bt-ble</snd_device_name>
@@ -899,6 +902,7 @@
         <out-device>
             <id>PAL_DEVICE_OUT_BLUETOOTH_BLE_BROADCAST</id>
             <back_end_name>BTFM_PROXY-RX-0</back_end_name>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <max_channels>1</max_channels>
             <channels>1</channels>
             <snd_device_name>bt-ble</snd_device_name>
@@ -908,9 +912,9 @@
         <out-device>
             <id>PAL_DEVICE_OUT_BLUETOOTH_SCO</id>
             <back_end_name>BTFM_PROXY-RX-0</back_end_name>
+            <bt_i2s_cp_enabled>1</bt_i2s_cp_enabled>
             <max_channels>1</max_channels>
             <channels>1</channels>
-            <bt_i2s_sd_line_idx>2</bt_i2s_sd_line_idx>
             <snd_device_name>bt-sco</snd_device_name>
             <samplerate>8000</samplerate>
             <bit_width>16</bit_width>
