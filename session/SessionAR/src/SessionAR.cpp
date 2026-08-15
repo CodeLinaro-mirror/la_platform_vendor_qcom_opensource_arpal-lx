@@ -993,6 +993,13 @@ int SessionAR::mute(Stream * s, bool state)
     return status;
 }
 
+int SessionAR::muteDevicePP(Stream * s, bool state)
+{
+    int32_t status = 0;
+    status = this->setConfig(s, MODULE, state ? DEVICEPP_MUTE : DEVICEPP_UNMUTE);
+    return status;
+}
+
 int SessionAR::pause(Stream * s)
 {
     int32_t status = 0;

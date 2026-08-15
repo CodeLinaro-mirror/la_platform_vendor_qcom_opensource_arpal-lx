@@ -973,12 +973,6 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
     switch (paramId) {
         case PAL_PARAM_ID_DEVICE_ROTATION:
         {
-            bool doDevPPMute = false;
-            status = s->getStreamAttributes(&sAttr);
-            if (status) {
-                PAL_ERR(LOG_TAG, "could not get stream attributes\n");
-                goto exit;
-            }
             status = session->getFrontEndIds(frontEndIds);
             if (status) {
                 PAL_ERR(LOG_TAG, "getFrontEndId() failed %d", status);
@@ -991,61 +985,11 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
             }
             rxAifBackEnds = session->getRxBEVecRef();
             builder = reinterpret_cast<PayloadBuilder*>(ppld->builder);
-            /* To avoid pop while switching channels, it is required to mute
-               the playback first and then swap the channel and unmute */
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = session->setConfig(s, MODULE, MUTE_TAG);
-            }  else if (PAL_AUDIO_OUTPUT == sAttr.direction) {
-                /* Need to check if there is a valid module available
-                 * for DEVICEPP_MUTE to avoid false negative failing
-                 * setConfig message.*/
-                status = s->getAssociatedDevices(associatedDevices);
-                if (0 != status) {
-                    PAL_ERR(LOG_TAG, "getAssociatedDevices Failed\n");
-                    goto exit;
-                }
-                for (int i = 0; i < associatedDevices.size(); i++) {
-                    status = associatedDevices[i]->getDeviceAttributes(&dAttr);
-                    if (0 != status) {
-                        PAL_ERR(LOG_TAG, "getDeviceAttributes Failed\n");
-                        break;
-                    }
-                    if ((PAL_DEVICE_OUT_SPEAKER == dAttr.id) &&
-                        (2 == dAttr.config.ch_info.channels) &&
-                        (strcmp(dAttr.custom_config.custom_key, "mspp") != 0)) {
-                        doDevPPMute = true;
-                        break;
-                    }
-                }
-                if (doDevPPMute) {
-                    setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_MUTE);
-                }
-            }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Mute failed");
-            }
-            //mStreamMutex.unlock(); NEED TO FIGURE OUT A WAY TO UNLOCK DURING SLEEP
-            usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
 
-            // mStreamMutex.lock();
             pal_param_device_rotation_t *rotation =
                                      reinterpret_cast<pal_param_device_rotation_t *>(ppld->payload);
             status = handleDeviceRotation(rm, s, rotation->rotation_type, frontEndIds.at(0), mxr,
                                           builder, rxAifBackEnds);
-            // mStreamMutex.unlock();
-            usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
-
-            // mStreamMutex.lock();
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = session->setConfig(s, MODULE, UNMUTE_TAG);
-            } else if (doDevPPMute) {
-                setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_UNMUTE);
-            }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
-            }
             break;
         }
         break;
