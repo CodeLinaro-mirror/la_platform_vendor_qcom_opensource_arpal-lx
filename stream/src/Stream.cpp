@@ -1690,6 +1690,20 @@ int32_t Stream::switchDevice(Stream* streamHandle, uint32_t numDev, struct pal_d
     status = rm->streamDevSwitch(streamDevDisconnect, StreamDevConnect);
     if (status) {
         PAL_ERR(LOG_TAG, "Device switch failed");
+        if (status == -EAGAIN) {
+            for (const auto& [stream, dev] : StreamDevConnect) {
+                if (!dev) continue;
+                if (rm->isBtA2dpDevice(dev->id)) {
+                    if (rm->isOutputDevId(dev->id)) {
+                        suspendedOutDevIds.clear();
+                        suspendedOutDevIds.push_back(dev->id);
+                    } else if (rm->isInputDevId(dev->id)) {
+                        suspendedInDevIds.clear();
+                        suspendedInDevIds.push_back(dev->id);
+                    }
+                }
+            }
+        }
     }
 
 done:
@@ -1727,17 +1741,6 @@ done:
         if (volume) {
             free(volume);
         }
-    }
-    if ((numDev > 1) && isNewDeviceA2dp && !isBtReady) {
-        suspendedOutDevIds.clear();
-        suspendedOutDevIds.push_back(newBtDevId);
-        if (rm->IsDummyDevEnabled()) {
-            suspendedOutDevIds.push_back(PAL_DEVICE_OUT_DUMMY);
-        } else {
-            suspendedOutDevIds.push_back(PAL_DEVICE_OUT_SPEAKER);
-        }
-    } else {
-        suspendedOutDevIds.clear();
     }
     mStreamMutex.unlock();
     return status;
