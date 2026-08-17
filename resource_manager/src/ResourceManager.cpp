@@ -2550,6 +2550,7 @@ void ResourceManager::getDeviceInfo(pal_device_id_t deviceId, pal_stream_type_t 
             devinfo->sndDevName_overwrite = false;
             devinfo->bit_width_overwrite = false;
             devinfo->fractionalSRSupported = deviceInfo[i].fractionalSRSupported;
+            devinfo->bt_i2s_sd_line_idx = deviceInfo[i].bt_i2s_sd_line_idx;
 
             if ((type >= PAL_STREAM_LOW_LATENCY) && (type < PAL_STREAM_MAX))
                 devinfo->priority = streamPriorityLUT.at(type);
@@ -10341,12 +10342,24 @@ int32_t ResourceManager::a2dpCaptureResumeFromDummy(pal_device_id_t dev_id)
         mActiveStreamMutex.unlock();
         goto exit;
     }
+    for (sIter = restoredStreams.begin(); sIter != restoredStreams.end(); sIter++) {
+        if (increaseStreamUserCounter(*sIter)) {
+            PAL_ERR(LOG_TAG, "restoredStreams %pk increaseStreamUserCounter failed", *sIter);
+        }
+    }
     mActiveStreamMutex.unlock();
 
     PAL_DBG(LOG_TAG, "restoring a2dp/ble streams");
     status = streamDevSwitch(streamDevDisconnect, streamDevConnect);
     if (status) {
         PAL_ERR(LOG_TAG, "streamDevSwitch failed %d", status);
+        mActiveStreamMutex.lock();
+        for (sIter = restoredStreams.begin(); sIter != restoredStreams.end(); sIter++) {
+            if (decreaseStreamUserCounter(*sIter)) {
+                PAL_ERR(LOG_TAG, "restoredStreams %pk decreaseStreamUserCounter failed", *sIter);
+            }
+        }
+        mActiveStreamMutex.unlock();
         goto exit;
     }
 
@@ -10362,6 +10375,9 @@ int32_t ResourceManager::a2dpCaptureResumeFromDummy(pal_device_id_t dev_id)
                 (*sIter)->a2dpMuted = false;
             }
             (*sIter)->unlockStreamMutex();
+        }
+        if (decreaseStreamUserCounter(*sIter)) {
+            PAL_ERR(LOG_TAG, "restoredStreams %pk decreaseStreamUserCounter failed", *sIter);
         }
     }
     mActiveStreamMutex.unlock();
@@ -13847,6 +13863,9 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
         } else if (!strcmp(tag_name, "ec_enable")) {
             size = deviceInfo.size() - 1;
             deviceInfo[size].ec_enable = atoi(data->data_buf);
+        } else if (!strcmp(tag_name, "bt_i2s_sd_line_idx")) {
+            size = deviceInfo.size() - 1;
+            deviceInfo[size].bt_i2s_sd_line_idx = atoi(data->data_buf);
         }
     } else if (data->tag == TAG_USECASE) {
         if (!strcmp(tag_name, "name")) {
