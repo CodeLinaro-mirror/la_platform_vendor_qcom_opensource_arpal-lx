@@ -27,4 +27,9 @@ LOCAL_SHARED_LIBRARIES := \
     libcutils \
     liblx-osal
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 include $(BUILD_SHARED_LIBRARY)
