@@ -527,15 +527,16 @@ int32_t pal_get_param(uint32_t param_id, void **param_payload, size_t *payload_s
 
     size = aidlPayload.size();
 
-    if (status.isOk() && *param_payload == NULL) {
-        *param_payload = calloc(1, size);
-        if (!(*param_payload)) {
-            ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
-            return -ENOMEM;
-        } else {
-            memcpy(*param_payload, aidlPayload.data(), size);
-            *payload_size = size;
+    if (status.isOk()) {
+        if (*param_payload == NULL) {
+            *param_payload = calloc(1, size);
+            if (!(*param_payload)) {
+                ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
+                return -ENOMEM;
+            }
         }
+        memcpy(*param_payload, aidlPayload.data(), size);
+        *payload_size = size;
     }
     return statusTFromBinderStatus(status);
 }
