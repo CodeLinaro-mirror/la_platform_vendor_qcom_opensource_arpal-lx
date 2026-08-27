@@ -1991,3 +1991,22 @@ bool SoundTriggerEngineGsl::CheckForStartRecognition() {
     }
     return status;
 }
+
+extern "C" SoundTriggerEngine* createSoundTriggerEngineGsl(
+    StreamSoundTrigger *s,
+    listen_model_indicator_enum type,
+    st_module_type_t module_type,
+    std::shared_ptr<VUIStreamConfig> sm_cfg)
+{
+    SoundTriggerEngine *engine = nullptr;
+    PAL_INFO(LOG_TAG, "SoundTriggerEngineGsl start");
+    try {
+        std::shared_ptr<SoundTriggerEngineGsl> gsl_engine =
+            SoundTriggerEngineGsl::GetInstance(s, type, module_type, sm_cfg);
+        engine = gsl_engine.get();
+    } catch (const std::exception& e) {
+        PAL_ERR(LOG_TAG, "SoundTriggerEngineGsl creation failed: %s", e.what());
+        return nullptr;
+    }
+    return engine;
+}
