@@ -420,14 +420,17 @@ int32_t pal_stream_start(pal_stream_handle_t *stream_handle)
 
     status = s->start();
 
+    if (0 != status) {
+        PAL_ERR(LOG_TAG, "stream start failed. status %d", status);
+        Stream::handleStreamCreateFailure(&sAttr, s->streamCb, s->cookie);
+        rm->lockActiveStream();
+        rm->decreaseStreamUserCounter(s);
+        rm->unlockActiveStream();
+        goto exit;
+    }
     rm->lockActiveStream();
     rm->decreaseStreamUserCounter(s);
     rm->unlockActiveStream();
-
-    if (0 != status) {
-        PAL_ERR(LOG_TAG, "stream start failed. status %d", status);
-        goto exit;
-    }
 
     if (rm->callback_event != NULL) {
         if (sAttr.type == PAL_STREAM_CALL_TRANSLATION) {
