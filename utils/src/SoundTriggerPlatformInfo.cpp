@@ -183,6 +183,10 @@ void CaptureProfile::HandleStartTag(const char* tag, const char** attribs)
             }
             ++i; /* move to next attribute */
         }
+    } else if (!strcmp(tag, "devicePP-metadata")) {
+        PAL_DBG(LOG_TAG, "tag %s is currently unused, ignoring", tag);
+    } else if (!strcmp(tag, "kvpair")) {
+        PAL_DBG(LOG_TAG, "tag %s is currently unused, ignoring", tag);
     } else {
         PAL_ERR(LOG_TAG, "Invalid tag %s", (char *)tag);
     }
@@ -349,6 +353,9 @@ void SoundTriggerPlatformInfo::HandleStartTag(const char* tag, const char** attr
             } else if (!strcmp(attribs[i], "low_latency_bargein_enable")) {
                 low_latency_bargein_enable_ =
                     !strncasecmp(attribs[++i], "true", 4) ? true : false;
+            } else if (!strcmp(attribs[i], "version")) {
+                PAL_DBG(LOG_TAG, "attribute %s is currently unused, ignoring", attribs[i]);
+                ++i; /* skip attribute value */
             } else {
                 PAL_ERR(LOG_TAG, "Invalid attribute %s", attribs[i++]);
             }
