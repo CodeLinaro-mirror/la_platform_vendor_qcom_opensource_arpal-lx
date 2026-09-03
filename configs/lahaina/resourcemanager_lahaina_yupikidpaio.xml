@@ -478,7 +478,7 @@
         </in-device>
 	<in-device>
             <id>PAL_DEVICE_IN_AUX_DIGITAL</id>
-            <back_end_name>MI2S-LPAIF_AUD-TX-SECONDARY</back_end_name>
+            <back_end_name>MI2S-LPAIF-TX-TERTIARY</back_end_name>
             <max_channels>2</max_channels>
             <channels>2</channels>
             <samplerate>48000</samplerate>
