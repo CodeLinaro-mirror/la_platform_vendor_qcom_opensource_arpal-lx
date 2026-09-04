@@ -147,7 +147,7 @@ int DisplayPort::getDeviceChannelAllocation(int num_channels)
         case 8:
             channel_allocation = 0x13; break;
         default:
-            channel_allocation = 0x0; break;
+            channel_allocation = 0x0;
             PAL_ERR(LOG_TAG, "invalid num channels: %d\n",
                     num_channels);
             break;
