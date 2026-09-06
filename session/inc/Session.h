@@ -101,6 +101,7 @@ public:
 
     // true for mute, false for unmute
     virtual int mute(Stream * s, bool state) = 0; /*newly added;*/
+    virtual int muteDevicePP(Stream * s, bool state) = 0; /*newly added;*/
     virtual int setVolume(Stream * s) = 0;/*newly added;*/
     virtual int drain(pal_drain_type_t type __unused) = 0;
     virtual int flush() = 0;
