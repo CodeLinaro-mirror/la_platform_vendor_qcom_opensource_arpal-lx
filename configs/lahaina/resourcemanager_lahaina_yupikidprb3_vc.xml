@@ -752,7 +752,7 @@
         </out-device>
         <out-device>
             <id>PAL_DEVICE_OUT_HDMI</id>
-            <back_end_name>MI2S-LPAIF-RX-SECONDARY</back_end_name>
+            <back_end_name>MI2S-LPAIF_RXTX-RX-PRIMARY</back_end_name>
             <max_channels>32</max_channels>
             <channels>2</channels>
             <bit_width>32</bit_width>
@@ -1374,7 +1374,7 @@
                 <!-- Module output channels -->
                 <param out_channels="1" />
                 <operating_modes>
-                    <low_power capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_RAW_LPI" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
+                    <low_power capture_profile_handset="TRI_MIC_16KHZ_16BIT_FFNS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_RAW_LPI" />
                     <low_power_ns capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_FFNS" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFNS" />
                     <high_performance capture_profile_handset="SINGLE_MIC_16KHZ_16BIT_FFEC" capture_profile_headset="SINGLE_MIC_16KHZ_16BIT_HEADSET_FFEC" />
                     <high_performance_ns capture_profile_handset="SINGLE_MIC_48KHZ_16BIT_FFECNS" capture_profile_headset="SINGLE_MIC_48KHZ_16BIT_HEADSET_FFECNS" />

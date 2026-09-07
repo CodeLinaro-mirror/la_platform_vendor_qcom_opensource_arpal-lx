@@ -2682,7 +2682,21 @@ int32_t ResourceManager::getDeviceConfig(struct pal_device *deviceattr,
         PAL_ERR(LOG_TAG, "failed to get device instance");
         return -EINVAL;
     }
-    status = tempDev->getDeviceConfig(deviceattr, sAttr);
+
+    if ((deviceattr->id == PAL_DEVICE_IN_HDMI) ||
+            (deviceattr->id == PAL_DEVICE_IN_AUX_DIGITAL)) {
+        status = (tempDev->checkAndUpdateBitWidth(&deviceattr->config.bit_width) |
+                  tempDev->checkAndUpdateSampleRate(&deviceattr->config.sample_rate));
+        if (!status)
+            deviceattr->config.aud_fmt_id = bitWidthToFormat.at(deviceattr->config.bit_width);
+        else {
+            PAL_ERR(LOG_TAG, "failed to update samplerate/bitwidth for HDMI-IN/Display IN device");
+            status = -EINVAL;
+        }
+        PAL_DBG(LOG_TAG, "HDMI IN sucess in getdeviceconfig");
+    } else {
+        status = tempDev->getDeviceConfig(deviceattr, sAttr);
+    }
 
 exit:
     PAL_DBG(LOG_TAG, "device id 0x%x channels %d samplerate %d, bitwidth %d format %d SndDev %s priority 0x%x",
@@ -3693,7 +3707,7 @@ void ResourceManager::mixerEventWaitThreadLoop(
 
     while (1) {
         PAL_VERBOSE(LOG_TAG, "going to wait for event");
-        ret = mixer_wait_event(mixer, -1);
+        ret = mixer_wait_event(mixer, 3000);
         PAL_VERBOSE(LOG_TAG, "mixer_wait_event returns %d", ret);
         if (ret <= 0) {
             PAL_DBG(LOG_TAG, "mixer_wait_event err! ret = %d", ret);
@@ -4917,13 +4931,13 @@ void ResourceManager::deinit()
     card_status_t state = CARD_STATUS_NONE;
 
     mixerClosed = true;
+    if (mixerEventTread.joinable()) {
+        mixerEventTread.join();
+    }
     mixer_close(audio_virt_mixer);
     mixer_close(audio_hw_mixer);
     if (audio_route) {
        audio_route_free(audio_route);
-    }
-    if (mixerEventTread.joinable()) {
-        mixerEventTread.join();
     }
     PAL_DBG(LOG_TAG, "Mixer event thread joined");
     if (sndmon)
@@ -8237,6 +8251,8 @@ int ResourceManager::handleDeviceConnectionChange(pal_param_device_connection_t 
                     PAL_DBG(LOG_TAG, "Mark device %d as available", device_id);
                     avail_devices_.push_back(device_id);
                 } else if (status == -ENOENT) {
+                    PAL_DBG(LOG_TAG, "Mark device %d as available (no capability info)", device_id);
+                    avail_devices_.push_back(device_id);
                     status = 0; //ignore error for no-entry devices
                 }
                 goto exit;
@@ -8289,9 +8305,31 @@ int ResourceManager::handleDeviceConnectionChange(pal_param_device_connection_t 
             avail_devices_.erase(iter);
     }
     else {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Invalid operation, Device %d, connection state %d, device avalibilty %d",
-                device_id, is_connected, device_available);
+        dAttr.id = device_id;
+        dev = Device::getInstance(&dAttr, rm);
+        if (dev && (dev->isPluginDevice(device_id) || dev->isDpDevice(device_id))) {
+            /* Plugin device (e.g. USB headset) connected/disconnected a second time
+             * with a different ALSA address.  For connect: call init() so the new
+             * card's capability is populated in usb_card_config_list_ without
+             * touching avail_devices_ (already marked available).  For disconnect:
+             * call deinit() to remove the card entry from usb_card_config_list_. */
+            conn_device.id = device_id;
+            dev = Device::getInstance(&conn_device, rm);
+            if (dev) {
+                if (is_connected) {
+                    PAL_DBG(LOG_TAG, "Device %d already available, init new address", device_id);
+                    status = dev->init(connection_state);
+                    if (status == -ENOENT) status = 0;
+                } else {
+                    PAL_DBG(LOG_TAG, "Device %d not in avail list, deinit address", device_id);
+                    status = dev->deinit(connection_state);
+                }
+            }
+        } else {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid operation, Device %d, connection state %d, device avalibilty %d",
+                    device_id, is_connected, device_available);
+        }
     }
 
 exit:

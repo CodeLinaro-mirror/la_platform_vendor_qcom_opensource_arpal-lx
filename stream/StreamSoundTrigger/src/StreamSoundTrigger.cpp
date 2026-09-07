@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center are provided under the following license:
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause
  */
 
 #define LOG_TAG "PAL: StreamSoundTrigger"
@@ -105,6 +105,7 @@ StreamSoundTrigger::StreamSoundTrigger(const struct pal_stream_attributes *sattr
     mutex_unlocked_after_cb_ = false;
     common_cp_update_disable_ = false;
     second_stage_processing_ = false;
+    is_backend_shared_ = false;
     gsl_engine_model_ = nullptr;
     gsl_engine_ = nullptr;
     vui_intf_ = nullptr;
@@ -1527,6 +1528,8 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
     uint32_t client_capture_read_delay = 0;
     uint32_t ring_buffer_len = 0;
     uint32_t ring_buffer_size = 0;
+    uint32_t mmap_buf_len = 0;
+    uint32_t mmap_frame_len = 0;
     vui_intf_param_t param {};
     struct buffer_config buf_config;
 
@@ -1625,12 +1628,18 @@ int32_t StreamSoundTrigger::SendRecognitionConfig(
 
     // update input buffer size for mmap usecase
     if (vui_ptfm_info_->GetMmapEnable()) {
-        inBufSize = vui_ptfm_info_->GetMmapFrameLength() *
+        mmap_buf_len = vui_ptfm_info_->GetMmapBufferDuration();
+        mmap_frame_len = vui_ptfm_info_->GetMmapFrameLength();
+        inBufSize = mmap_frame_len *
+            ((hist_buffer_duration + mmap_buf_len - 1) / mmap_buf_len) *
             sm_cfg_->GetSampleRate() * sm_cfg_->GetBitWidth() *
             sm_cfg_->GetOutChannels() / (MS_PER_SEC * BITS_PER_BYTE);
         if (!inBufSize) {
-            PAL_ERR(LOG_TAG, "Invalid frame size, use default value");
-            inBufSize = BUF_SIZE_CAPTURE;
+            PAL_ERR(LOG_TAG, "Invalid frame size");
+            status = -EINVAL;
+            goto error_exit;
+        } else {
+            inBufCount = (mmap_buf_len + mmap_frame_len - 1) / mmap_frame_len;
         }
     }
 

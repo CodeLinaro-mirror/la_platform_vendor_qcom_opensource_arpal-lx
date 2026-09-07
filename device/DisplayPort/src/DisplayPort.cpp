@@ -114,7 +114,8 @@ std::shared_ptr<Device> DisplayPort::getInstance(struct pal_device *device,
             objRx1 = sp;
         }
         return objRx1;
-    } else if (device->id == PAL_DEVICE_IN_AUX_DIGITAL) {
+    } else if ((device->id == PAL_DEVICE_IN_AUX_DIGITAL) ||
+            (device->id == PAL_DEVICE_IN_HDMI)) {
         if (!objTx) {
             std::shared_ptr<Device> sp(new DisplayPort(device, Rm));
             objTx = sp;
@@ -137,7 +138,8 @@ std::shared_ptr<Device> DisplayPort::getObject(pal_device_id_t id)
             if (objRx1->getSndDeviceId() == id)
                 return objRx1;
         }
-    } else if (id == PAL_DEVICE_IN_AUX_DIGITAL) {
+    } else if ((id == PAL_DEVICE_IN_AUX_DIGITAL) ||
+            (id == PAL_DEVICE_IN_HDMI)) {
         if (objTx) {
             if (objTx->getSndDeviceId() == id)
                 return objTx;
@@ -214,11 +216,13 @@ int DisplayPort::start()
 
     customPayload = NULL;
     customPayloadSize = 0;
-
-    status = configureDpEndpoint();
-    if (status != 0) {
-        PAL_ERR(LOG_TAG,"Endpoint Configuration Failed");
-        return status;
+    if ((deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL) ||
+            (deviceAttr.id == PAL_DEVICE_OUT_AUX_DIGITAL_1)) {
+        status = configureDpEndpoint();
+        if (status != 0) {
+            PAL_ERR(LOG_TAG,"Endpoint Configuration Failed");
+            return status;
+        }
     }
     status = Device::start();
     return status;
@@ -852,6 +856,10 @@ int32_t DisplayPort::getDeviceConfig(struct pal_device *deviceattr,
         else
             deviceattr->config.bit_width = BITWIDTH_16;
     }
+
+    rm->getDeviceInfo(deviceattr->id, sAttr->type,
+                      deviceattr->custom_config.custom_key, &devinfo);
+
     if ((deviceattr->config.bit_width == BITWIDTH_32) &&
                 (devinfo.bitFormatSupported != PAL_AUDIO_FMT_PCM_S32_LE)) {
         PAL_DBG(LOG_TAG, "32 bit is not supported; update with supported bit format");
