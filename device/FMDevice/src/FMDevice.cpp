@@ -37,7 +37,11 @@ extern "C" void CreateFmDevice(struct pal_device *device,
                                 const std::shared_ptr<ResourceManager> rm,
                                 pal_device_id_t id, bool createDevice,
                                 std::shared_ptr<Device> *dev) {
-    *dev = FMDevice::getInstance(device, rm);
+    (void)id; // to supress compiler warning
+    if (createDevice)
+        *dev = FMDevice::getInstance(device, rm);
+    else
+        *dev = FMDevice::getObject();
 }
 
 std::shared_ptr<Device> FMDevice::obj = nullptr;
