@@ -1114,7 +1114,12 @@ int SessionAlsaPcm::start(Stream * s)
                     pcm = pcm_open(rm->getVirtualSndCard(), pcmDevIds.at(0),
                         PCM_IN |PCM_MMAP| PCM_NOIRQ, &config);
                 } else {
+#ifdef ENABLE_TIMESTAMP
+                    pcm = pcm_open(rm->getVirtualSndCard(), pcmDevIds.at(0),
+                        PCM_IN | PCM_TIMESTAMP, &config);
+#else
                     pcm = pcm_open(rm->getVirtualSndCard(), pcmDevIds.at(0), PCM_IN, &config);
+#endif
                 }
 
                 if (!pcm) {
