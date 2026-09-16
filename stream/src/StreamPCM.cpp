@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -434,6 +434,29 @@ int32_t StreamPCM::start()
     }
 
     if (currentState == STREAM_INIT || currentState == STREAM_STOPPED) {
+        /* Post-start shared-BE convergence for PCM playback:
+        * iterate over active devices and re-run RM device evaluation
+        * after stream start, to resolve routing mismatches caused by
+        * concurrent route decisions and incomplete first-pass convergence.
+        */
+        if (!mDevices.empty()) {
+            for (int32_t i = 0; i < mDevices.size(); ++i) {
+                std::shared_ptr<Device> dev = mDevices[i];
+                struct pal_device devAttr = {};
+
+                if (dev->getDeviceAttributes(&devAttr, this)) {
+                    PAL_INFO(LOG_TAG, "post-start convergence: failed to get attr for dev %d",
+                             dev->getSndDeviceId());
+                    continue;
+                }
+                mStreamMutex.unlock();
+                if (rm->updateDeviceConfig(&dev, &devAttr, mStreamAttr)) {
+                    PAL_INFO(LOG_TAG, "post-start convergence triggered for dev %d",
+                             dev->getSndDeviceId());
+                }
+                mStreamMutex.lock();
+            }
+        }
         switch (mStreamAttr->direction) {
         case PAL_AUDIO_OUTPUT:
             PAL_VERBOSE(LOG_TAG, "Inside PAL_AUDIO_OUTPUT device count - %zu",
@@ -943,10 +966,12 @@ int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
         if (!forceSetParameters && mVolumeData->volume_pair[0].vol == 0.0f &&
             !vol_set_param_info.isVolumeUsingSetParam) {
             //if the volume is 0, force settting parameters as well
+            status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
+            }
             if (rm->isCRSCallEnabled) {
                 status = session->setConfig(this, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-            } else {
-                status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
             }
             forceSetParameters = true;
         }
@@ -960,10 +985,12 @@ int32_t StreamPCM::setVolume(struct pal_volume_data *volume)
             delete[] volPayload;
             PAL_DBG(LOG_TAG, "set volume by parameter, status: %d", status);
         } else {
+            status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
+            if (0 != status) {
+                PAL_ERR(LOG_TAG, "session setConfig failed with status %d", status);
+            }
             if (rm->isCRSCallEnabled) {
                 status = session->setConfig(this, MODULE, CRS_CALL_VOLUME, RX_HOSTLESS);
-            } else {
-                status = session->setConfig(this, CALIBRATION, TAG_STREAM_VOLUME);
             }
         }
 
