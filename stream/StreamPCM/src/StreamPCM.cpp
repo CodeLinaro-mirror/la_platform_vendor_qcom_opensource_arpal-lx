@@ -1143,9 +1143,42 @@ int32_t  StreamPCM::setParameters(uint32_t param_id, void *payload)
         mStreamMutex.unlock();
         return -EINVAL;
     }
+
     // Call Session for Setting the parameter.
     if (NULL != session) {
-        status = session->setParameters(this, param_id, payload);
+        if (param_id == PAL_PARAM_ID_DEVICE_ROTATION) {
+            /* To avoid pop while switching channels, it is required to mute
+               the playback first and then swap the channel and unmute */
+            if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
+                mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                setConfigStatus = session->mute(this, true);
+            } else {
+                setConfigStatus = session->muteDevicePP(this, true);
+            }
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "Mute before device rotation failed");
+            }
+            mStreamMutex.unlock();
+            usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
+            mStreamMutex.lock();
+            status = session->setParameters(this,
+                                            PAL_PARAM_ID_DEVICE_ROTATION,
+                                            payload);
+            mStreamMutex.unlock();
+            usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
+            mStreamMutex.lock();
+            if (mStreamAttr->type == PAL_STREAM_LOW_LATENCY ||
+                mStreamAttr->type == PAL_STREAM_ULTRA_LOW_LATENCY) {
+                setConfigStatus = session->mute(this, false);
+            } else {
+                setConfigStatus = session->muteDevicePP(this, false);
+            }
+            if (setConfigStatus) {
+                PAL_INFO(LOG_TAG, "Unmute after device rotation failed");
+            }
+        } else {
+            status = session->setParameters(this, param_id, payload);
+        }
     } else {
         PAL_ERR(LOG_TAG, "Session is null");
         status = -EINVAL;
