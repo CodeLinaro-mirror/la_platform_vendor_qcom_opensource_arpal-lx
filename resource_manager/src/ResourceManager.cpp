@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2025 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -2550,7 +2550,7 @@ void ResourceManager::getDeviceInfo(pal_device_id_t deviceId, pal_stream_type_t 
             devinfo->sndDevName_overwrite = false;
             devinfo->bit_width_overwrite = false;
             devinfo->fractionalSRSupported = deviceInfo[i].fractionalSRSupported;
-            devinfo->bt_i2s_sd_line_idx = deviceInfo[i].bt_i2s_sd_line_idx;
+            devinfo->bt_i2s_cp_enabled = deviceInfo[i].bt_i2s_cp_enabled;
 
             if ((type >= PAL_STREAM_LOW_LATENCY) && (type < PAL_STREAM_MAX))
                 devinfo->priority = streamPriorityLUT.at(type);
@@ -13863,9 +13863,9 @@ void ResourceManager::process_device_info(struct xml_userdata *data, const XML_C
         } else if (!strcmp(tag_name, "ec_enable")) {
             size = deviceInfo.size() - 1;
             deviceInfo[size].ec_enable = atoi(data->data_buf);
-        } else if (!strcmp(tag_name, "bt_i2s_sd_line_idx")) {
+        } else if (!strcmp(tag_name, "bt_i2s_cp_enabled")) {
             size = deviceInfo.size() - 1;
-            deviceInfo[size].bt_i2s_sd_line_idx = atoi(data->data_buf);
+            deviceInfo[size].bt_i2s_cp_enabled = atoi(data->data_buf);
         }
     } else if (data->tag == TAG_USECASE) {
         if (!strcmp(tag_name, "name")) {
@@ -14463,6 +14463,7 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     std::vector <std::tuple<Stream *, struct pal_device *>> streamDevConnect;
     std::vector <Stream *> streamsToSwitch;
     std::vector <Stream*>::iterator sIter;
+    std::vector <Stream *> tempMutedStreams;
 
     PAL_DBG(LOG_TAG, "Enter");
 
@@ -14535,6 +14536,11 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
                  sharedStream = std::get<0>(elem);
                  streamDevDisconnect.push_back({sharedStream,dev->getSndDeviceId()});
                  streamDevConnect.push_back({sharedStream,&curDevAttr});
+                 if (!rm->increaseStreamUserCounter(sharedStream)) {
+                    PAL_DBG(LOG_TAG, "mute stream %pk during restoreDevice", sharedStream);
+                    sharedStream->mute(true);
+                    tempMutedStreams.push_back(sharedStream);
+                 }
             }
         }
 
@@ -14565,9 +14571,24 @@ void ResourceManager::restoreDevice(std::shared_ptr<Device> dev)
     }
 
     mActiveStreamMutex.unlock();
+    if (!tempMutedStreams.empty()) {
+        PAL_VERBOSE(LOG_TAG, "muted %zu stream(s), sleeping %d us for mute to settle before devSwitch",
+                 tempMutedStreams.size(), MUTE_RAMP_PERIOD);
+        usleep(MUTE_RAMP_PERIOD);
+    }
     if (!streamDevDisconnect.empty())
         streamDevSwitch(streamDevDisconnect, streamDevConnect);
 exit:
+    if (!tempMutedStreams.empty()) {
+        mActiveStreamMutex.lock();
+        for(sIter = tempMutedStreams.begin(); sIter != tempMutedStreams.end(); sIter++) {
+            (*sIter)->mute(false);
+            rm->decreaseStreamUserCounter(*sIter);
+            PAL_DBG(LOG_TAG, "unmute stream %pk during restoreDevice", *sIter);
+        }
+        mActiveStreamMutex.unlock();
+    }
+    tempMutedStreams.clear();
     PAL_DBG(LOG_TAG, "Exit");
     return;
 }

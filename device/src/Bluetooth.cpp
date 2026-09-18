@@ -56,6 +56,8 @@
 #define BT_SLIMBUS_CLK_STR                "BT SLIMBUS CLK SRC"
 #define MIXER_BT_I2S_RX_SD_LINE           "BT I2S RX SD line"
 #define MIXER_BT_I2S_TX_SD_LINE           "BT I2S TX SD line"
+#define BT_I2S_RX_SD_LINE_IDX             2
+#define BT_I2S_TX_SD_LINE_IDX             1
 
 Bluetooth::Bluetooth(struct pal_device *device, std::shared_ptr<ResourceManager> Rm)
     : Device(device, Rm),
@@ -1124,33 +1126,33 @@ int32_t Bluetooth::configureSlimbusClockSrc(void)
 
 int32_t Bluetooth::configureI2sSdLine(void)
 {
-    struct pal_device_info devInfo = {};
     struct mixer_ctl *ctrl = NULL;
-    const char *mixerCtlName = NULL;
     int32_t ret = 0;
 
-    rm->getDeviceInfo(deviceAttr.id, (pal_stream_type_t)0, "", &devInfo);
-    if (devInfo.bt_i2s_sd_line_idx < 0)
-        return 0;
+    PAL_DBG(LOG_TAG, "device id %d: setting %s to %d",
+            deviceAttr.id, MIXER_BT_I2S_RX_SD_LINE, BT_I2S_RX_SD_LINE_IDX);
 
-    if (deviceAttr.id == PAL_DEVICE_OUT_BLUETOOTH_SCO ||
-        deviceAttr.id == PAL_DEVICE_OUT_BLUETOOTH_A2DP)
-        mixerCtlName = MIXER_BT_I2S_RX_SD_LINE;
-    else if (deviceAttr.id == PAL_DEVICE_IN_BLUETOOTH_SCO_HEADSET)
-        mixerCtlName = MIXER_BT_I2S_TX_SD_LINE;
-    else
-        return 0;
-
-    ctrl = mixer_get_ctl_by_name(hwMixerHandle, mixerCtlName);
+    ctrl = mixer_get_ctl_by_name(hwMixerHandle, MIXER_BT_I2S_RX_SD_LINE);
     if (!ctrl) {
-        PAL_DBG(LOG_TAG, "%s mixer control not found, skipping", mixerCtlName);
-        return 0;
+         PAL_ERR(LOG_TAG, "%s mixer control not found", MIXER_BT_I2S_RX_SD_LINE);
+    } else {
+         ret = mixer_ctl_set_value(ctrl, 0, BT_I2S_RX_SD_LINE_IDX);
+         if (ret)
+            PAL_ERR(LOG_TAG, "Failed to set %s to %d: %d",
+                    MIXER_BT_I2S_RX_SD_LINE, BT_I2S_RX_SD_LINE_IDX, ret);
     }
+    PAL_DBG(LOG_TAG, "device id %d: setting %s to %d",
+            deviceAttr.id, MIXER_BT_I2S_TX_SD_LINE, BT_I2S_TX_SD_LINE_IDX);
 
-    ret = mixer_ctl_set_value(ctrl, 0, devInfo.bt_i2s_sd_line_idx);
-    if (ret)
-        PAL_ERR(LOG_TAG, "Failed to set %s to %d: %d",
-                mixerCtlName, devInfo.bt_i2s_sd_line_idx, ret);
+    ctrl = mixer_get_ctl_by_name(hwMixerHandle, MIXER_BT_I2S_TX_SD_LINE);
+    if (!ctrl) {
+        PAL_ERR(LOG_TAG, "%s mixer control not found", MIXER_BT_I2S_TX_SD_LINE);
+    } else {
+        ret = mixer_ctl_set_value(ctrl, 0, BT_I2S_TX_SD_LINE_IDX);
+        if (ret)
+            PAL_ERR(LOG_TAG, "Failed to set %s to %d: %d",
+                        MIXER_BT_I2S_TX_SD_LINE, BT_I2S_TX_SD_LINE_IDX, ret);
+    }
 
     return 0;
 }
@@ -1259,6 +1261,7 @@ tSESSION_TYPE BtA2dp::get_session_type()
 void BtA2dp::open_a2dp_source()
 {
     int ret = 0;
+    struct pal_device_info devInfo = {};
 
     PAL_DBG(LOG_TAG, "Open A2DP source start");
     if (bt_lib_source_handle && (audio_source_open_api ||
@@ -1285,6 +1288,10 @@ void BtA2dp::open_a2dp_source()
             PAL_DBG(LOG_TAG, "Called a2dp open with improper state %d", a2dpState);
         }
     }
+
+    rm->getDeviceInfo(deviceAttr.id, (pal_stream_type_t)0, "", &devInfo);
+    if (devInfo.bt_i2s_cp_enabled)
+        configureI2sSdLine();
 }
 
 int BtA2dp::close_audio_source()
@@ -1465,6 +1472,7 @@ void BtA2dp::init_a2dp_sink()
 void BtA2dp::open_a2dp_sink()
 {
     int ret = 0;
+    struct pal_device_info devInfo = {};
 
     PAL_DBG(LOG_TAG, "Open A2DP sink start");
     if (bt_lib_sink_handle && (audio_sink_open_api ||
@@ -1488,6 +1496,10 @@ void BtA2dp::open_a2dp_sink()
             PAL_DBG(LOG_TAG, "Called a2dp open with improper state %d", a2dpState);
         }
     }
+
+    rm->getDeviceInfo(deviceAttr.id, (pal_stream_type_t)0, "", &devInfo);
+    if (devInfo.bt_i2s_cp_enabled)
+        configureI2sSdLine();
 }
 
 int BtA2dp::close_audio_sink()
@@ -1551,10 +1563,6 @@ int BtA2dp::start()
 
     if (totalActiveSessionRequests == 1) {
         status = configureSlimbusClockSrc();
-        if (status) {
-            goto exit;
-        }
-        status = configureI2sSdLine();
         if (status) {
             goto exit;
         }
@@ -2489,6 +2497,11 @@ void BtSco::updateSampleRate(uint32_t *sampleRate)
 int32_t BtSco::setDeviceParameter(uint32_t param_id, void *param)
 {
     pal_param_btsco_t* param_bt_sco = (pal_param_btsco_t *)param;
+    struct pal_device_info devInfo = {};
+
+    rm->getDeviceInfo(deviceAttr.id, (pal_stream_type_t)0, "", &devInfo);
+    if (devInfo.bt_i2s_cp_enabled)
+        configureI2sSdLine();
 
     switch (param_id) {
     case PAL_PARAM_ID_BT_SCO:
@@ -2716,9 +2729,6 @@ int BtSco::start()
 
     if (deviceStartStopCount == 0) {
         status = configureSlimbusClockSrc();
-        if (status)
-            goto exit;
-        status = configureI2sSdLine();
         if (status)
             goto exit;
     }
