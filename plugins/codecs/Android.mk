@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH:= $(call my-dir)
 
 #--------------------------------------------
@@ -27,6 +28,11 @@ LOCAL_HEADER_LIBRARIES := \
     libspf-headers \
     libarosal_headers
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_bt_bundle
 LOCAL_MODULE_OWNER := qti
@@ -54,6 +60,11 @@ LOCAL_C_INCLUDES += $(TOP)/system/media/audio/include
 LOCAL_HEADER_LIBRARIES := \
     libspf-headers \
     libarosal_headers
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
 
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_bt_aptx
@@ -83,8 +94,14 @@ LOCAL_HEADER_LIBRARIES := \
     libspf-headers \
     libarosal_headers
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_bt_ble
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
+endif

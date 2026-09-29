@@ -1,0 +1,131 @@
+cc_library_shared {
+
+    name: "lib_bt_bundle",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "bt_base.c",
+        "bt_bundle.c"
+        ],
+
+    shared_libs: [
+        "libcutils",
+        "liblog",
+        "libdl"
+        ],
+
+    include_dirs: [
+        "system/media/audio/include"
+        ],
+
+    cflags: [
+            "-O2",
+            "-fvisibility=hidden",
+            "-Wall",
+            "-Werror"
+            ],
+
+    header_libs: [
+        "libspf-headers",
+        "libarosal_headers"
+        ],
+
+        enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+apex_available: [
+    "//apex_available:platform",
+    "//apex_available:anyapex",
+],
+}
+
+
+cc_library_shared {
+
+    name: "lib_bt_aptx",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "bt_base.c",
+        "bt_aptx.c"
+        ],
+
+    shared_libs: [
+        "libcutils",
+        "liblog",
+        "libdl"
+        ],
+
+    include_dirs: [
+        "system/media/audio/include"
+        ],
+
+    cflags: [
+        "-O2",
+        "-fvisibility=hidden",
+        "-Wall",
+        "-Werror",
+        ],
+
+    header_libs: [
+        "libspf-headers",
+        "libarosal_headers"
+        ],
+
+        enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+apex_available: [
+    "//apex_available:platform",
+    "//apex_available:anyapex",
+],
+}
+
+
+cc_library_shared {
+
+    name: "lib_bt_ble",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "bt_base.c",
+        "bt_ble.c",
+        ],
+
+    shared_libs: [
+        "libcutils",
+        "liblog",
+        "libdl",
+        ],
+
+    include_dirs: [
+        "system/media/audio/include",
+        ],
+
+    cflags: [
+        "-O2",
+        "-fvisibility=hidden",
+        "-Wall",
+        "-Werror",
+        ],
+
+    header_libs: [
+        "libspf-headers",
+        "libarosal_headers",
+        ],
+
+        enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+apex_available: [
+    "//apex_available:platform",
+    "//apex_available:anyapex",
+],
+}
+

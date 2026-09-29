@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH:= $(call my-dir)
 
 LOCAL_CFLAGS += -Wall -Werror
@@ -76,6 +77,12 @@ LOCAL_HEADER_LIBRARIES := \
     plugin_manager_headers \
     libsession_voice_headers
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_default_plugin_controls
 LOCAL_MODULE_OWNER := qti
@@ -115,6 +122,7 @@ LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/pal/context_manager/inc
 LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/pal/plugins/PluginManager/inc
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio_route/include
 LOCAL_C_INCLUDES += $(TOP)/system/media/audio/include
+LOCAL_C_INCLUDES += $(TOP)/vendor/qcom/opensource/tinyalsa/include
 
 LOCAL_HEADER_LIBRARIES := \
     libagm_headers \
@@ -128,8 +136,15 @@ LOCAL_HEADER_LIBRARIES := \
     plugin_manager_headers \
     liblisten_headers
 
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
+
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE := lib_default_set_param_plugin_controls
 LOCAL_MODULE_OWNER := qti
 LOCAL_VENDOR_MODULE := true
 include $(BUILD_SHARED_LIBRARY)
+endif

@@ -1,7 +1,84 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "stream_soundtrigger_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
 
+stream_soundtrigger_cc_library_headers {
     name: "libstream_soundtrigger_headers",
     export_include_dirs: ["inc"],
     vendor: true,
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
 
+cc_library {
+
+    name: "libstream_soundtrigger",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+         "src/StreamSoundTrigger.cpp",
+         "src/SoundTriggerEngine.cpp",
+         "src/SoundTriggerEngineCapi.cpp",
+         "src/SoundTriggerEngineGsl.cpp",
+         "src/PalRingBuffer.cpp",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "liblx-osal",
+        "libar-pal",
+        "libexpat",
+        "libvui_intf",
+        "libsession_ar",
+        "libaudioroute",
+        ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/pal/stream/StreamSoundTrigger/inc",
+        "system/media/audio_route/include",
+        "vendor/qcom/opensource/pal",
+        ],
+
+    cppflags: [
+        "-fexceptions", "-frtti",
+        ],
+
+    rtti: true,
+
+    header_libs: [
+        "libarpal_headers",
+        "libspf-headers",
+        "libvui_dmgr_headers",
+        "libarvui_intf_headers",
+        "libaudiofeaturestats_headers",
+        "liblisten_headers",
+        "libacdb_headers",
+        "libarpal_internalheaders",
+        "libarmemlog_headers",
+        "libcapiv2_headers",
+        "libsession_ar_headers",
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }

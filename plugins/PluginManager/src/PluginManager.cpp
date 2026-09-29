@@ -124,7 +124,7 @@ int32_t PluginManager::registeredPlugin(pm_item_t item, pal_plugin_manager_t typ
             }
         }
         if (!foundLib){
-            PAL_ERR(LOG_TAG, "%s registered", item.libName.c_str());
+            PAL_DBG(LOG_TAG, "%s registered", item.libName.c_str());
             item.refCount = 0;
             pluginList->push_back(item);
         }

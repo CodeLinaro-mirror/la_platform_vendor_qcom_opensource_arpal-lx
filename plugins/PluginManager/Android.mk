@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -112,3 +113,4 @@ endif
 endif #end of static compilation
 
 include $(BUILD_STATIC_LIBRARY)
+endif

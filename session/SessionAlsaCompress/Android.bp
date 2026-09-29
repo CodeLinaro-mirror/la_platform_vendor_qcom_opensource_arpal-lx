@@ -1,7 +1,86 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "session_compress_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
 
+session_compress_cc_library_headers {
     name: "libsession_compress_headers",
     export_include_dirs: ["inc"],
     vendor: true,
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
 
+cc_library {
+
+    name: "libsession_compress",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/SessionAlsaCompress.cpp",
+        ],
+
+    shared_libs: [
+            "liblog",
+            "libcutils",
+            "liblx-osal",
+            "libar-pal",
+            "libexpat",
+            "libutilscallstack",
+            "libvui_intf",
+            "libsession_ar",
+            ]
+        + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+            true: ["libqti-tinyalsa", "libqti-tinycompress"],
+            default: ["libqti-tinyalsa", "libqti-tinycompress"],
+        }),
+
+    include_dirs: [
+            "vendor/qcom/opensource/pal/session/SessionAlsaCompress/inc",
+            "system/media/audio_route/include",
+            "vendor/qcom/opensource/pal",
+            ]
+        + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+            true: [],
+            default: ["vendor/qcom/opensource/tinycompress/include"],
+        }),
+
+    cppflags: [
+        "-fexceptions", "-frtti",
+        ],
+
+    header_libs: [
+        "libarpal_headers",
+        "libspf-headers",
+        "libacdb_headers",
+        "liblisten_headers",
+        "libarosal_headers",
+        "libaudiofeaturestats_headers",
+        "libarvui_intf_headers",
+        "libarmemlog_headers",
+        "libarpal_internalheaders",
+        "libagm_headers",
+        "libsession_ar_headers",
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }

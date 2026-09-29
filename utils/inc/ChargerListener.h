@@ -38,6 +38,9 @@
 #include <functional>
 #endif
 
+#include <functional>
+#include <cstring>
+
 #define MAX_EVENTS 3
 
 typedef enum {

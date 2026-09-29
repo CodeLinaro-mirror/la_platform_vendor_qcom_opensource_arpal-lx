@@ -1,3 +1,4 @@
+ifneq ($(TARGET_SDV_ENABLED), true)
 ifneq ($(AUDIO_USE_STUB_HAL), true)
 
 LOCAL_PATH := $(call my-dir)
@@ -116,6 +117,12 @@ LOCAL_SHARED_LIBRARIES := \
     libvui_intf \
     libarmemlog \
     libhidlbase
+
+ifeq ($(strip $(TARGET_USES_DLOG)),true)
+LOCAL_CFLAGS               += -DENABLE_DLOG
+LOCAL_HEADER_LIBRARIES     += dlog_headers
+LOCAL_SHARED_LIBRARIES     += libdlog
+endif
 
 LOCAL_STATIC_LIBRARIES := libplugin_manager
 
@@ -256,3 +263,4 @@ include $(PAL_BASE_PATH)/session/Android.mk
 include $(PAL_BASE_PATH)/device/Android.mk
 
 endif #AUDIO_USE_STUB_HAL
+endif

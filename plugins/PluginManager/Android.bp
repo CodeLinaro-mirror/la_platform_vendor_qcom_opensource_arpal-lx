@@ -1,7 +1,65 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "plugin_manager_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
 
+plugin_manager_cc_library_headers {
     name: "plugin_manager_headers",
     export_include_dirs: ["inc"],
     vendor: true,
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
 
+cc_library_static {
+    name: "libplugin_manager",
+    owner: "qti",
+    vendor: true,
+
+    cppflags: ["-fexceptions"],
+
+    srcs: ["src/PluginManager.cpp"],
+
+    include_dirs: [
+        "system/media/audio_route/include",
+        "vendor/qcom/opensource/args/ar_osal/api",
+        "vendor/qcom/opensource/pal",
+        "external/tinycompress/include",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "liblx-osal",
+        "libexpat",
+        "libqti-tinyalsa",
+        "libqti-tinycompress",
+    ],
+
+    header_libs: [
+        "libarpal_headers",
+        "libarpal_internalheaders",
+        "libarvui_intf_headers",
+        "liblisten_headers",
+    ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }

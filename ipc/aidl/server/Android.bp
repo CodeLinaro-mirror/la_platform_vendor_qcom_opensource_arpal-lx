@@ -1,0 +1,56 @@
+cc_library_shared {
+
+    name: "libpalipcservice",
+    owner: "qti",
+    vendor: true,
+    clang: true,
+    tidy: true,
+
+    srcs: [
+        "Service.cpp",
+        "PalServerWrapper.cpp",
+        ],
+
+    shared_libs: [
+        "liblog",
+        "libbinder_ndk",
+        "libbase",
+        "libcutils",
+        "libutils",
+        "libfmq",
+        "libar-pal",
+        "vendor.qti.hardware.pal-V1-ndk",
+        ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/pal/inc",
+        "vendor/qcom/opensource/pal/utils/inc",
+        ],
+
+    cflags: [
+        "-v",
+        "-Wall",
+        "-Wthread-safety",
+        ],
+
+    header_libs: [
+        "libspf-headers",
+        "libarosal_headers",
+        "libacdb_headers",
+        ],
+
+    static_libs: [
+        "libpalaidltypeconverter",
+        "libaidlcommonsupport",
+        ],
+
+        enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+apex_available: [
+    "//apex_available:platform",
+    "//apex_available:anyapex",
+],
+}
+

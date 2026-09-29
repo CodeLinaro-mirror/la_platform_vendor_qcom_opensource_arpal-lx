@@ -1,7 +1,96 @@
-cc_library_headers {
-
+soong_config_module_type {
+    name: "session_pcm_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
+session_pcm_cc_library_headers {
     name: "libsession_pcm_headers",
     export_include_dirs: ["inc"],
     vendor: true,
-
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
+genrule {
+    name: "log_skip_initial_volume_status",
+    cmd: select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+        "_cdcsdv": "echo '[libsession_pcm] TARGET_BOARD_DERIVATIVE_SUFFIX=_cdcsdv -> SKIP_INITIAL_VOLUME=ENABLED (-DSKIP_INITIAL_VOLUME applied)' 1>&2 && touch $(out)",
+        default: "echo '[libsession_pcm] TARGET_BOARD_DERIVATIVE_SUFFIX=unset/other -> SKIP_INITIAL_VOLUME=DISABLED' 1>&2 && touch $(out)",
+    }),
+    out: ["skip_initial_volume_status.stamp"],
+}
+genrule {
+    name: "log_target_board_derivative_suffix",
+    cmd: "echo 'TARGET_BOARD_DERIVATIVE_SUFFIX' 1>&2 && touch $(out)",
+    out: ["target_board_derivative_suffix.stamp"],
+}
+cc_library {
+    name: "libsession_pcm",
+    owner: "qti",
+    vendor: true,
+    generated_headers: ["log_skip_initial_volume_status", "log_target_board_derivative_suffix"],
+    srcs: [
+        "src/SessionAlsaPcm.cpp",
+        ],
+    shared_libs: [
+            "liblog",
+            "libcutils",
+            "liblx-osal",
+            "libar-pal",
+            "libexpat",
+            "libagmclient",
+            "libaudioroute",
+            "libsession_ar",
+            ]
+        + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+            true: ["libqti-tinyalsa", "libqti-tinycompress"],
+            default: ["libqti-tinyalsa", "libqti-tinycompress"],
+        }),
+    include_dirs: [
+            "vendor/qcom/opensource/pal/session/SessionAlsaPcm/inc",
+            "system/media/audio_route/include",
+            "vendor/qcom/opensource/pal",
+            ]
+        + select(soong_config_variable("qti", "TARGET_USES_QTI_TINYCOMPRESS"), {
+            true: [],
+            default: ["external/tinycompress/include"],
+        }),
+    cflags: []
+        + select(soong_config_variable("qti", "TARGET_BOARD_DERIVATIVE_SUFFIX"), {
+            "_cdcsdv": ["-DSKIP_INITIAL_VOLUME"],
+            default: [],
+        }),
+    cppflags: [
+            "-fexceptions", "-frtti", "-Wno-macro-redefined",
+            ],
+    rtti: true,
+    header_libs: [
+        "libarpal_headers",
+        "libspf-headers",
+        "libagm_headers",
+        "libacdb_headers",
+        "liblisten_headers",
+        "libaudiofeaturestats_headers",
+        "libarvui_intf_headers",
+        "libarmemlog_headers",
+        "libarpal_internalheaders",
+        "libsession_ar_headers",
+        ],
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }

@@ -1,9 +1,23 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "arpal_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: ["apex_available"],
+}
 
+arpal_cc_library_headers {
     name: "libarpal_headers",
     export_include_dirs: ["inc"],
     vendor: true,
-
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
 }
 
 // Core internal headers for arpal library components.
@@ -34,3 +48,158 @@ cc_library_headers {
     ],
     vendor: true,
 }
+
+cc_library_headers {
+    name: "libarpal_internalheaders",
+    export_include_dirs: [
+        ".",
+        "api/vui-interface",
+        "stream/inc",
+        "device/inc",
+        "session/inc",
+        "session/SessionAR/inc",
+        "session/SessionAlsaVoice/inc",
+        "resource_manager/inc",
+        "context_manager/inc",
+        "utils/inc",
+        "plugins/codecs",
+        "plugins/controls",
+        "plugins/PluginManager/inc",
+    ],
+    vendor: true,
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+}
+
+cc_library_shared {
+    name: "libar-pal",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "Pal.cpp",
+        "PalAR.cpp",
+        "stream/src/Stream.cpp",
+        "device/src/Device.cpp",
+        "session/src/Session.cpp",
+        "context_manager/src/ContextManager.cpp",
+        "resource_manager/src/ResourceManager.cpp",
+        "resource_manager/src/SndCardMonitor.cpp",
+        "utils/src/SoundTriggerPlatformInfo.cpp",
+        "utils/src/ACDPlatformInfo.cpp",
+        "utils/src/ASRPlatformInfo.cpp",
+        "utils/src/VoiceUIPlatformInfo.cpp",
+        "utils/src/SignalHandler.cpp",
+        "utils/src/AudioHapticsInterface.cpp",
+        "utils/src/MetadataParser.cpp",
+        "utils/src/MemLogBuilder.cpp",
+        "utils/src/PerfLock.cpp",
+        "utils/src/STUtils.cpp",
+        "utils/src/SharedMemoryUtils.cpp",
+    ],
+
+    export_include_dirs: ["inc"],
+
+    header_libs: [
+        "libarpal_headers",
+        "libutils_headers",
+        "libspf-headers",
+        "libcapiv2_headers",
+        "libagm_headers",
+        "libacdb_headers",
+        "liblisten_headers",
+        "libarosal_headers",
+        "libvui_dmgr_headers",
+        "libaudiofeaturestats_headers",
+        "libarvui_intf_headers",
+        "libarmemlog_headers",
+        "libarpal_internalheaders",
+    ],
+
+    cflags: [
+        "-D_ANDROID_",
+        "-Wno-macro-redefined",
+        "-Wall", "-Werror",
+        "-Wno-unused-variable", "-Wno-unused-parameter",
+        "-DCONFIG_GSL",
+        "-D_GNU_SOURCE",
+        "-DADSP_SLEEP_MONITOR",
+    ],
+
+    cppflags: ["-fexceptions", "-frtti"],
+
+    rtti: true,
+
+    shared_libs: [
+        "libar-gsl",
+        "liblog",
+        "libexpat",
+        "liblx-osal",
+        "libaudioroute",
+        "libcutils",
+        "libutilscallstack",
+        "libagmclient",
+        "libvui_intf",
+        "libarmemlog",
+        "libhidlbase",
+        "libqti-tinyalsa",
+        "libqti-tinycompress"
+    ],
+
+    static_libs: ["libplugin_manager"],
+
+    include_dirs: [
+        "system/media/audio_route/include",
+        "system/media/audio/include",
+        "vendor/qcom/opensource/pal",
+        "vendor/qcom/opensource/tinycompress/include",
+        "kernel_platform/soc-repo/include/uapi",
+        "external/tinyalsa/include"
+     ],
+ 
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+cc_library_shared {
+    name: "libaudiochargerlistener",
+    owner: "qti",
+    vendor: true,
+    srcs: ["utils/src/ChargerListener.cpp"],
+    cflags: ["-Wall", "-Werror", "-Wno-unused-function", "-Wno-unused-variable"],
+    shared_libs: ["libcutils", "liblog"],
+    include_dirs: [
+        "vendor/qcom/opensource/pal/utils/inc",
+        "system/media/audio/include",
+        "system/media/audio_route/include",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+}
+
+subdirs = select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+    "true": [
+        "plugins/Android.bp",
+        "ipc/aidl/Android.bp",
+        "stream/Android.bp",
+        "session/Android.bp",
+        "device/Android.bp",
+    ],
+    default: [],
+})

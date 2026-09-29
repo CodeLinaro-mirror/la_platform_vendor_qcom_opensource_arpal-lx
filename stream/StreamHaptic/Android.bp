@@ -1,7 +1,76 @@
-cc_library_headers {
+soong_config_module_type {
+    name: "stream_haptics_cc_library_headers",
+    module_type: "cc_library_headers",
+    config_namespace: "qti",
+    bool_variables: ["AUDIO_SDV_APEX_ENABLED"],
+    properties: [
+        "apex_available",
+    ],
+}
 
+stream_haptics_cc_library_headers {
     name: "libstream_haptics_headers",
     export_include_dirs: ["inc"],
     vendor: true,
+    soong_config_variables: {
+        AUDIO_SDV_APEX_ENABLED: {
+            apex_available: [
+                "//apex_available:platform",
+                "//apex_available:anyapex",
+            ],
+        },
+    },
+}
 
+cc_library {
+
+    name: "libstream_haptics",
+    owner: "qti",
+    vendor: true,
+
+    srcs: [
+        "src/StreamHaptics.cpp",
+    ],
+
+    shared_libs: [
+        "liblog",
+        "libcutils",
+        "liblx-osal",
+        "libar-pal",
+        "libexpat",
+        "libstream_pcm",
+        "libaudioroute",
+    ],
+
+    include_dirs: [
+        "vendor/qcom/opensource/pal/stream/StreamHaptic/inc",
+        "system/media/audio_route/include",
+        "vendor/qcom/opensource/pal",
+        ],
+
+    cppflags: [
+        "-fexceptions",
+        ],
+
+    header_libs: [
+        "libarpal_headers",
+        "libstream_pcm_headers",
+        "libspf-headers",
+        "libvui_dmgr_headers",
+        "libarvui_intf_headers",
+        "libaudiofeaturestats_headers",
+        "liblisten_headers",
+        "libacdb_headers",
+        "libarpal_internalheaders",
+        "libarmemlog_headers",
+        ],
+
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    enabled: select(soong_config_variable("qti", "AUDIO_SDV_APEX_ENABLED"), {
+        "true": true,
+        default: false,
+    }),
 }
