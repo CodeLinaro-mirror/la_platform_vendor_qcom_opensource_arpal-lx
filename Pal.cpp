@@ -408,6 +408,14 @@ int32_t pal_stream_get_param(pal_stream_handle_t *stream_handle,
 {
     Stream *s = NULL;
     int status;
+    std::shared_ptr<ResourceManager> rm = NULL;
+
+    rm = ResourceManager::getInstance();
+    if (!rm) {
+        status = -EINVAL;
+        PAL_ERR(LOG_TAG, "Invalid resource manager");
+        return status;
+    }
 
     if (!stream_handle) {
         status = -EINVAL;
