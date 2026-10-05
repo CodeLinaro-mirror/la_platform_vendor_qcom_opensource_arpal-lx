@@ -6732,6 +6732,22 @@ bool ResourceManager::updateDeviceConfig(std::shared_ptr<Device> *inDev,
                         if ((isInputDevId(device->getSndDeviceId()) && isInputDevId(inDevAttr->id)) ||
                             (isOutputDevId(device->getSndDeviceId()) && isOutputDevId(inDevAttr->id))) {
                             if (device->getSndDeviceId() != inDevAttr->id) {
+                                /* For wired headset voice calls the LL stream is in
+                                 * combo [SPEAKER, WIRED_HEADSET] state at call-open
+                                 * time. Switching SPEAKER out here adds ~15 ms to the
+                                 * KPI critical path. Defer to post-start: APM will
+                                 * send setAudioPatch after pal_stream_start completes,
+                                 * routing LL to WIRED_HEADSET only (off-path cleanup).
+                                 */
+                                if (inDevAttr->id == PAL_DEVICE_OUT_WIRED_HEADSET ||
+                                    inDevAttr->id == PAL_DEVICE_OUT_WIRED_HEADPHONE ||
+                                    inDevAttr->id == PAL_DEVICE_OUT_USB_HEADSET ||
+                                    inDevAttr->id == PAL_DEVICE_OUT_USB_DEVICE) {
+                                    PAL_DBG(LOG_TAG, "headset voice (dev %d): defer LL "
+                                            "devSwitch to post-start, skip stream %pK",
+                                            inDevAttr->id, str);
+                                    continue;
+                                }
                                 streamDevDisconnect.push_back({str, device->getSndDeviceId()});
                                 streamDevConnect.push_back({str, inDevAttr});
                             }
