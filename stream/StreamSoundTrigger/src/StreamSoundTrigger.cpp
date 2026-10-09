@@ -1280,6 +1280,8 @@ int32_t StreamSoundTrigger::LoadSoundModel(
     sound_model_config.is_model_merge_enabled = sm_cfg_->GetMergeFirstStageSoundModels();
     sound_model_config.supported_engine_count = sm_cfg_->GetSupportedEngineCount();
     sound_model_config.intf_plugin_lib = sm_cfg_->GetVUIIntfPluginLib();
+    PAL_INFO(LOG_TAG, "GetVUIInterface: module_type=%d plugin_lib='%s'",
+            model_type_, sound_model_config.intf_plugin_lib.c_str());
     param_model.stream = (void *)this;
     param_model.data = (void *)&sound_model_config;
     status = GetVUIInterface(&vui_intf_handle_, &param_model);
@@ -4097,22 +4099,34 @@ int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_pa
         case ST_MODULE_TYPE_HW:
         case ST_MODULE_TYPE_CUSTOM_1:
         case ST_MODULE_TYPE_CUSTOM_2:
+            if (config->intf_plugin_lib.empty()) {
+                PAL_ERR(LOG_TAG, "interface_plugin_lib not configured for module_type %d",
+                        config->module_type);
+                status = -EINVAL;
+                break;
+            }
+
             plugin = (vui_intf_plugin_t *)calloc(1, sizeof(vui_intf_plugin_t));
             if (!plugin) {
                 status = -ENOMEM;
                 break;
             }
 
+            PAL_INFO(LOG_TAG, "dlopen: intf_plugin_lib='%s' module_type=%d",
+                    config->intf_plugin_lib.c_str(), config->module_type);
             plugin->handle = dlopen(config->intf_plugin_lib.c_str(), RTLD_NOW);
             if (!plugin->handle) {
-                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "dlopen failed for '%s': %s",
+                        config->intf_plugin_lib.c_str(), dlerror());
+                status = -ENOENT;
                 free(plugin);
                 break;
             }
 
             get_intf = (get_vui_intf_f)dlsym(plugin->handle, "get_vui_interface");
             if (!get_intf) {
-                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "dlsym get_vui_interface failed: %s", dlerror());
+                status = -EINVAL;
                 dlclose(plugin->handle);
                 free(plugin);
                 break;
@@ -4120,14 +4134,17 @@ int32_t StreamSoundTrigger::GetVUIInterface(struct vui_intf_t *intf, vui_intf_pa
 
             plugin->release_intf = (release_vui_intf_f)dlsym(plugin->handle, "release_vui_interface");
             if (!plugin->release_intf) {
-                status = -ENOMEM;
+                PAL_ERR(LOG_TAG, "dlsym release_vui_interface failed: %s", dlerror());
+                status = -EINVAL;
                 dlclose(plugin->handle);
                 free(plugin);
                 break;
             }
 
+            PAL_INFO(LOG_TAG, "get_intf calling for module_type=%d", config->module_type);
             status = get_intf(intf, model);
             if (status != 0) {
+                PAL_ERR(LOG_TAG, "get_vui_interface returned status %d", status);
                 dlclose(plugin->handle);
                 free(plugin);
                 break;

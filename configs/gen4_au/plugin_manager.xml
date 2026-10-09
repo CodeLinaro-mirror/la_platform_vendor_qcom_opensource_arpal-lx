@@ -133,4 +133,7 @@ SPDX-License-Identifier: BSD-3-Clause-Clear
         <device name="PAL_DEVICE_IN_EXT_EC_REF" lib="libdev_ext_ec.so" entryFunction="CreateExtEcDevice"/>
         <device name="PAL_DEVICE_IN_ECHO_REF" lib="libdev_ec_ref.so" entryFunction="CreateECRefDevice"/>
     </devices>
+    <st_engines>
+        <sound_model name="ST_SM_ID_SVA_F_STAGE_GMM" lib="libstream_soundtrigger.so" entryFunction="createSoundTriggerEngineGsl"/>
+    </st_engines>
 </plugin_manager_info>
