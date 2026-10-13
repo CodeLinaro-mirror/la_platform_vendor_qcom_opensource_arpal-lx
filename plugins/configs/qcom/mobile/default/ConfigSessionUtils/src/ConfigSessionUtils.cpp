@@ -67,6 +67,7 @@
 
 #define BOLERO_PROC_INTF    "/proc/lpass_cdc_reginfo/lpass_cdc_regdump"
 #define WCD939X_PROC_INTF   "/proc/wcd939x_reginfo/wcd939x_regdump"
+#define WCD9378_PROC_INTF   "/proc/wcd9378_reginfo/wcd9378_regdump"
 #define WSA884X_1_PROC_INTF "/proc/wsa884x_reginfo_1/wsa884x_regdump"
 #define WSA884X_2_PROC_INTF "/proc/wsa884x_reginfo_2/wsa884x_regdump"
 #define WSA883X_1_PROC_INTF "/proc/wsa883x_reginfo_1/wsa883x_regdump"
@@ -80,12 +81,14 @@
 #define SILENCE_EVENT_INFO DUMP_OUT_PATH "silence_event_info"
 #define BOLERO_REGDUMP_OUT_FILE          "lpass_cdc_regdump"
 #define WCD939X_REGDUMP_OUT_FILE         "wcd939x_regdump"
+#define WCD9378_REGDUMP_OUT_FILE         "wcd9378_regdump"
 #define VA_SWR_REGDUMP_OUT_FILE          "va_swr_regdump"
 
 #define KMSG_OUT_FILE              DUMP_OUT_PATH KMSG_FILE TIMESTAMP_FORMAT_STRING
 #define SILENCE_EVENT_INFO         DUMP_OUT_PATH "silence_event_info" TIMESTAMP_FORMAT_STRING
 #define BOLERO_REGDUMP_OUT_PATH    DUMP_OUT_PATH BOLERO_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
 #define WCD939X_REGDUMP_OUT_PATH   DUMP_OUT_PATH WCD939X_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
+#define WCD9378_REGDUMP_OUT_PATH   DUMP_OUT_PATH WCD9378_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
 #define VA_SWR_REGDUM_OUT_PATH     DUMP_OUT_PATH VA_SWR_REGDUMP_OUT_FILE TIMESTAMP_FORMAT_STRING
 
 bool silenceEventRegistered = false;
@@ -970,11 +973,6 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
     switch (paramId) {
         case PAL_PARAM_ID_DEVICE_ROTATION:
         {
-            status = s->getStreamAttributes(&sAttr);
-            if (status) {
-                PAL_ERR(LOG_TAG, "could not get stream attributes\n");
-                goto exit;
-            }
             status = session->getFrontEndIds(frontEndIds);
             if (status) {
                 PAL_ERR(LOG_TAG, "getFrontEndId() failed %d", status);
@@ -987,38 +985,11 @@ int32_t pluginConfigSetParam(Stream* s, void* pluginPayload)
             }
             rxAifBackEnds = session->getRxBEVecRef();
             builder = reinterpret_cast<PayloadBuilder*>(ppld->builder);
-            /* To avoid pop while switching channels, it is required to mute
-               the playback first and then swap the channel and unmute */
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                    sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                    setConfigStatus = session->setConfig(s, MODULE, MUTE_TAG);
-            } else {
-                setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_MUTE);
-            }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Mute failed");
-            }
-            //mStreamMutex.unlock(); NEED TO FIGURE OUT A WAY TO UNLOCK DURING SLEEP
-            usleep(MUTE_RAMP_PERIOD); // Wait for Mute ramp down to happen
 
-            // mStreamMutex.lock();
             pal_param_device_rotation_t *rotation =
                                      reinterpret_cast<pal_param_device_rotation_t *>(ppld->payload);
             status = handleDeviceRotation(rm, s, rotation->rotation_type, frontEndIds.at(0), mxr,
                                           builder, rxAifBackEnds);
-            // mStreamMutex.unlock();
-            usleep(MUTE_RAMP_PERIOD); // Wait for channel swap to take affect
-
-            // mStreamMutex.lock();
-            if (sAttr.type == PAL_STREAM_LOW_LATENCY ||
-                sAttr.type == PAL_STREAM_ULTRA_LOW_LATENCY) {
-                setConfigStatus = session->setConfig(s, MODULE, UNMUTE_TAG);
-            } else {
-                setConfigStatus = session->setConfig(s, MODULE, DEVICEPP_UNMUTE);
-            }
-            if (setConfigStatus) {
-                PAL_INFO(LOG_TAG, "DevicePP Unmute failed");
-            }
             break;
         }
         break;
@@ -1319,6 +1290,13 @@ void handleSilenceDetectionCb(uint64_t hdl __unused, uint32_t event_id, void *ev
         strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
                         WCD939X_REGDUMP_OUT_PATH, timenow);
         dump_registers(WCD939X_PROC_INTF, out_file_name);
+
+        /*
+         * Read WCD9378  Registers
+         **/
+        strftime(out_file_name, MAX_DUMP_FILENAME_SIZE,
+                        WCD9378_REGDUMP_OUT_PATH, timenow);
+        dump_registers(WCD9378_PROC_INTF, out_file_name);
 
         /*
          * kernel msg (/dev/kmsg) read

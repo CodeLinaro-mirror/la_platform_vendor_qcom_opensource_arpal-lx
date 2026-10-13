@@ -151,6 +151,7 @@ public:
     virtual int suspend(Stream * s) override {return 0;};
     virtual int resume(Stream * s) override;
     virtual int mute(Stream * s, bool state) override;
+    virtual int muteDevicePP(Stream * s, bool state) override;
     virtual int setVolume(Stream * s) override;
     virtual int drain(pal_drain_type_t type __unused) override {return 0;};
     virtual int flush() override {return 0;};
