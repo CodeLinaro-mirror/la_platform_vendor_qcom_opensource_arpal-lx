@@ -1128,7 +1128,7 @@ void HapticsDevProtection::HapticsDevCalibrationThread()
 }
 
 HapticsDevProtection::HapticsDevProtection(struct pal_device *device,
-                        std::shared_ptr<ResourceManager> Rm):HapticsDev(device, Rm), deviceMutex()
+                        std::shared_ptr<ResourceManager> Rm):HapticsDev(device, Rm), deviceMutex(), pcmDevIdsRx()
 {
     int status = 0;
     struct pal_device_info devinfo = {};
