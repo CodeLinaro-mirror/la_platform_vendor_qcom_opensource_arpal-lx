@@ -106,7 +106,7 @@ codec_library="lib_bt_aptx.so" />
         <in-device>
             <id>PAL_DEVICE_IN_HANDSET_MIC</id>
             <back_end_name>CODEC_DMA-LPAIF_RXTX-TX-3</back_end_name>
-            <max_channels>2</max_channels>
+            <max_channels>4</max_channels>
             <channels>1</channels>
             <samplerate>48000</samplerate>
             <bit_width>16</bit_width>
