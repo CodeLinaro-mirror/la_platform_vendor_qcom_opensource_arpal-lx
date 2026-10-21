@@ -53,6 +53,16 @@
 #define MIN_SPKR_IDLE_SEC (60 * 3)
 #define WAKEUP_MIN_IDLE_CHECK (1000 * 30)
 
+#ifdef USE_CUSTOM_SPK_CTRL
+#define SPKR_RIGHT_WSA_TEMP "SpR WSA Temp"
+#define SPKR_LEFT_WSA_TEMP "SpL WSA Temp"
+
+#define SPKR_RIGHT_WSA_DEV_NUM "SpR WSA Get DevNum"
+#define SPKR_LEFT_WSA_DEV_NUM "SpL WSA Get DevNum"
+
+#define SPKR_RIGHT_WSA_DC_DET "SpR WSA PA Disable"
+#define SPKR_LEFT_WSA_DC_DET "SpL WSA PA Disable"
+#else
 #define SPKR_RIGHT_WSA_TEMP "SpkrRight WSA Temp"
 #define SPKR_LEFT_WSA_TEMP "SpkrLeft WSA Temp"
 
@@ -61,6 +71,7 @@
 
 #define SPKR_RIGHT_WSA_DC_DET "SpkrRight WSA PA Disable"
 #define SPKR_LEFT_WSA_DC_DET "SpkrLeft WSA PA Disable"
+#endif
 
 #define TZ_TEMP_MIN_THRESHOLD    (-30)
 #define TZ_TEMP_MAX_THRESHOLD    (80)

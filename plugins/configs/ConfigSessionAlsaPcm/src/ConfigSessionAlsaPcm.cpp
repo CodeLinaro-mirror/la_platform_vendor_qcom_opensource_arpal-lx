@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
  *
- * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
  * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
@@ -161,7 +161,7 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
     int DeviceId = 0;
     int tagId = 0;
     int payload_size = 0;
-
+    std::vector<uint32_t> MIIDs;
     PAL_DBG(LOG_TAG, "Enter");
     memset(&streamData, 0, sizeof(struct sessionToPayloadParam));
     memset(&dAttr, 0, sizeof(struct pal_device));
@@ -319,6 +319,53 @@ int32_t pcmPluginConfigSetConfigStart(Stream* s, void* pluginPayload)
                     if (0 != status) {
                         PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
                         goto exit;
+                    }
+                }
+
+                /* Get DEVICE_PP_STREAM_SR_MFC MIID(s) and configure using the associated device's
+                 * config, since TAG_DEVICE_PP_STREAM_SR_MFC is not populated from ACDB get-param. */
+                if (!txAifBackEnds.empty()) {
+                    status = SessionAlsaUtils::getModuleInstanceId(mxr, pcmDevIds.at(0),
+                                                                txAifBackEnds[0].second.data(),
+                                                                TAG_DEVICE_PP_STREAM_SR_MFC, MIIDs);
+                    if (status != 0) {
+                        PAL_ERR(LOG_TAG, "TAG_DEVICE_PP_STREAM_SR_MFC not present, skipping DSR MFC config");
+                        status = 0;
+                    } else {
+                        status = s->getAssociatedDevices(associatedDevices);
+                        if (0 != status) {
+                            PAL_ERR(LOG_TAG, "getAssociatedDevices Failed\n");
+                            goto exit;
+                        }
+                        for (const auto& miids : MIIDs) {
+                            for (int i = 0; i < associatedDevices.size(); i++) {
+                                status = associatedDevices[i]->getDeviceAttributes(&dAttr);
+                                if (0 != status) {
+                                    PAL_ERR(LOG_TAG, "get Device Attributes Failed\n");
+                                    goto exit;
+                                }
+                                /* Supported: 8K, 16K, 32K, 48K */
+                                if ((sAttr.in_media_config.sample_rate == SAMPLINGRATE_8K) ||
+                                    (sAttr.in_media_config.sample_rate == SAMPLINGRATE_16K) ||
+                                    (sAttr.in_media_config.sample_rate == SAMPLINGRATE_32K) ||
+                                    (sAttr.in_media_config.sample_rate == SAMPLINGRATE_48K)) {
+                                    streamData.sampleRate = sAttr.in_media_config.sample_rate;
+                                } else
+                                    streamData.sampleRate = SAMPLINGRATE_48K;
+                                streamData.bitWidth = AUDIO_BIT_WIDTH_DEFAULT_16;
+                                streamData.numChannel = dAttr.config.ch_info.channels;
+                                streamData.ch_info = nullptr;
+                                builder->payloadMFCConfig(&payload, &payloadSize, miids, &streamData);
+                                if (payloadSize && payload) {
+                                    status = builder->updateCustomPayload(payload, payloadSize);
+                                    builder->freeCustomPayload(&payload, &payloadSize);
+                                    if (0 != status) {
+                                        PAL_ERR(LOG_TAG, "updateCustomPayload Failed\n");
+                                        goto exit;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 if (sAttr.type == PAL_STREAM_VOIP_TX) {

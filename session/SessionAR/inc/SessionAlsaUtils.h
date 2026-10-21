@@ -26,9 +26,9 @@
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- *  Changes from Qualcomm Innovation Center, Inc. are provided under the following license:
- *  Copyright (c) 2023-2024 Qualcomm Innovation Center, Inc. All rights reserved.
- *  SPDX-License-Identifier: BSD-3-Clause-Clear
+ * Changes from Qualcomm Technologies, Inc. are provided under the following license:
+ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+ * SPDX-License-Identifier: BSD-3-Clause-Clear
  */
 
 #ifndef SESSION_ALSAUTILS_H
@@ -136,6 +136,8 @@ public:
                     std::vector<std::pair<std::string, int>> &freeDeviceMetaData);
     static int getModuleInstanceId(struct mixer *mixer, int device, const char *intf_name,
                        int tag_id, uint32_t *miid);
+    static int getModuleInstanceId(struct mixer *mixer, int device, const char *intf_name,
+                       int tag_id, std::vector<uint32_t> &miids);
     static int getTagsWithModuleInfo(struct mixer *mixer, int device, const char *intf_name,
                        uint8_t *payload);
     static int setMixerParameter(struct mixer *mixer, int device,

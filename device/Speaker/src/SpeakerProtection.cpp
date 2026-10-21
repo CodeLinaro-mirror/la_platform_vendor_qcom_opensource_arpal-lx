@@ -1481,6 +1481,30 @@ int SpeakerProtection::viTxSetupThreadLoop()
     memset(&viChannelMapConfg, 0, sizeof(viChannelMapConfg));
     memset(&viExModeConfg, 0, sizeof(viExModeConfg));
 
+    // Setup TX path
+    device.id = PAL_DEVICE_IN_VI_FEEDBACK;
+
+    ret = rm->getAudioRoute(&audioRoute);
+    if (0 != ret) {
+        PAL_ERR(LOG_TAG, "Failed to get the audio_route address status %d", ret);
+        goto exit;
+    }
+
+    dev = Device::getInstance(&mDeviceAttr, rm);
+    dev->getCurrentSndDevName(mSndDeviceName_SP);
+
+    /* vi_device is static and may still hold channel/sndDevName state from a
+     * previous VI TX setup (e.g. speaker route switched from stereo to mono
+     * between calls). Refresh it from the current speaker route before using
+     * vi_device.channels to compute ch_info/config below, otherwise the TX
+     * path gets configured with a stale channel count and AGM rejects it
+     * with a channel mismatch.
+     */
+    if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
+        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
+    else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
+        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_PROXY, "", &vi_device);
+
     //Configure device attribute
     rm->getChannelMap(&(ch_info.ch_map[0]), vi_device.channels);
     ch_info.channels = vi_device.channels;
@@ -1519,23 +1543,6 @@ int SpeakerProtection::viTxSetupThreadLoop()
     config.start_threshold = 0;
     config.stop_threshold = INT_MAX;
     config.silence_threshold = 0;
-
-    // Setup TX path
-    device.id = PAL_DEVICE_IN_VI_FEEDBACK;
-
-    ret = rm->getAudioRoute(&audioRoute);
-    if (0 != ret) {
-        PAL_ERR(LOG_TAG, "Failed to get the audio_route address status %d", ret);
-        goto exit;
-    }
-
-    dev = Device::getInstance(&mDeviceAttr, rm);
-    dev->getCurrentSndDevName(mSndDeviceName_SP);
-
-    if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER && strstr(mSndDeviceName_SP, "mono"))
-        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_VOICE_CALL, "", &vi_device);
-    else if (mDeviceAttr.id == PAL_DEVICE_OUT_SPEAKER)
-        rm->getDeviceInfo(PAL_DEVICE_IN_VI_FEEDBACK, PAL_STREAM_PROXY, "", &vi_device);
 
     strlcpy(mSndDeviceName_vi, vi_device.sndDevName.c_str(), DEVICE_NAME_MAX_SIZE);
 

@@ -8251,6 +8251,8 @@ int ResourceManager::handleDeviceConnectionChange(pal_param_device_connection_t 
                     PAL_DBG(LOG_TAG, "Mark device %d as available", device_id);
                     avail_devices_.push_back(device_id);
                 } else if (status == -ENOENT) {
+                    PAL_DBG(LOG_TAG, "Mark device %d as available (no capability info)", device_id);
+                    avail_devices_.push_back(device_id);
                     status = 0; //ignore error for no-entry devices
                 }
                 goto exit;
@@ -8303,9 +8305,31 @@ int ResourceManager::handleDeviceConnectionChange(pal_param_device_connection_t 
             avail_devices_.erase(iter);
     }
     else {
-        status = -EINVAL;
-        PAL_ERR(LOG_TAG, "Invalid operation, Device %d, connection state %d, device avalibilty %d",
-                device_id, is_connected, device_available);
+        dAttr.id = device_id;
+        dev = Device::getInstance(&dAttr, rm);
+        if (dev && (dev->isPluginDevice(device_id) || dev->isDpDevice(device_id))) {
+            /* Plugin device (e.g. USB headset) connected/disconnected a second time
+             * with a different ALSA address.  For connect: call init() so the new
+             * card's capability is populated in usb_card_config_list_ without
+             * touching avail_devices_ (already marked available).  For disconnect:
+             * call deinit() to remove the card entry from usb_card_config_list_. */
+            conn_device.id = device_id;
+            dev = Device::getInstance(&conn_device, rm);
+            if (dev) {
+                if (is_connected) {
+                    PAL_DBG(LOG_TAG, "Device %d already available, init new address", device_id);
+                    status = dev->init(connection_state);
+                    if (status == -ENOENT) status = 0;
+                } else {
+                    PAL_DBG(LOG_TAG, "Device %d not in avail list, deinit address", device_id);
+                    status = dev->deinit(connection_state);
+                }
+            }
+        } else {
+            status = -EINVAL;
+            PAL_ERR(LOG_TAG, "Invalid operation, Device %d, connection state %d, device avalibilty %d",
+                    device_id, is_connected, device_available);
+        }
     }
 
 exit:
