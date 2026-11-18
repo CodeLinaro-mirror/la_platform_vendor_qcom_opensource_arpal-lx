@@ -28,7 +28,7 @@ SharedMemoryWrapper::SharedMemoryWrapper(int size) : mSize(size) {
     }
     mSharedFd = sharedFd;
     mCloseFd = true;
-    ALOGV("%s ptr %p", __func__, mSharedMemory);
+    ALOGV("%s ptr %p and fd %d", __func__, mSharedMemory, mSharedFd);
 }
 
 SharedMemoryWrapper::SharedMemoryWrapper(int sharedFd, int size)

@@ -407,7 +407,7 @@ int32_t pal_stream_set_param(pal_stream_handle_t *stream_handle, uint32_t param_
     if (memPayload) {
         PalParamPayloadShmem payload;
         memcpy(memPayload, param_payload->payload, param_payload->payload_size);
-        payload.fd = ScopedFileDescriptor(sharedFd);
+        payload.fd = ScopedFileDescriptor(dup(sharedFd));
         payload.payloadSize = param_payload->payload_size;
         auto aidlStreamHandle = convertLegacyHandleToAidlHandle(stream_handle);
         status = statusTFromBinderStatus(
@@ -527,15 +527,16 @@ int32_t pal_get_param(uint32_t param_id, void **param_payload, size_t *payload_s
 
     size = aidlPayload.size();
 
-    if (status.isOk() && *param_payload == NULL) {
-        *param_payload = calloc(1, size);
-        if (!(*param_payload)) {
-            ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
-            return -ENOMEM;
-        } else {
-            memcpy(*param_payload, aidlPayload.data(), size);
-            *payload_size = size;
+    if (status.isOk()) {
+        if (*param_payload == NULL) {
+            *param_payload = calloc(1, size);
+            if (!(*param_payload)) {
+                ALOGE("Failed to allocate memory for (*param_payload) %s %d", __func__, __LINE__);
+                return -ENOMEM;
+            }
         }
+        memcpy(*param_payload, aidlPayload.data(), size);
+        *payload_size = size;
     }
     return statusTFromBinderStatus(status);
 }
