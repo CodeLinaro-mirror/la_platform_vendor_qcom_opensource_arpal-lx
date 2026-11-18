@@ -26,10 +26,9 @@
 * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
 * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *
- * Changes from Qualcomm Technologies, Inc. are provided under the following license:
- *=
- * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
- * SPDX-License-Identifier: BSD-3-Clause-Clear
+* Changes from Qualcomm Technologies, Inc. are provided under the following license:
+* Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+* SPDX-License-Identifier: BSD-3-Clause-Clear
 */
 
 #define LOG_TAG "PAL: SessionAlsaUtils"
@@ -441,10 +440,6 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
         }
     }
     status = rmHandle->getVirtualAudioMixer(&mixerHandle);
-    if (status) {
-       PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
-       return status;
-    }
     if (mixerHandle == nullptr) {
         PAL_ERR(LOG_TAG, "mixerHandle is null");
         goto exit;
@@ -1519,7 +1514,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
     struct mixer_ctl *txFeMixerCtrls[FE_MAX_NUM_MIXER_CONTROLS] = { nullptr };
     struct mixer_ctl *txBeMixerCtrl = nullptr;
     std::vector<std::shared_ptr<Device>> associatedDevices;
-    struct mixer *mixerHandle;
+    struct mixer *mixerHandle = nullptr;
     uint32_t streamPropId[] = {0x08000010, 1, 0x1}; /** gsl_subgraph_platform_driver_props.xml */
     uint32_t devicePropId[] = {0x08000010, 2, 0x2, 0x5};
     uint32_t streamDevicePropId[] = {0x08000010, 1, 0x3}; /** gsl_subgraph_platform_driver_props.xml */
@@ -1541,7 +1536,7 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
     }
 
     status = streamHandle->getAssociatedDevices(associatedDevices);
-    if(0 != status) {
+    if (0 != status) {
         PAL_ERR(LOG_TAG, "getAssociatedDevices Failed \n");
         return status;
     }
@@ -1549,10 +1544,6 @@ int SessionAlsaUtils::open(Stream * streamHandle, std::shared_ptr<ResourceManage
     PayloadBuilder* builder = new PayloadBuilder();
 
     status = rmHandle->getVirtualAudioMixer(&mixerHandle);
-    if (status) {
-       PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
-       return status;
-    }
     if (mixerHandle == nullptr) {
         PAL_ERR(LOG_TAG, "mixerHandle is null");
         goto exit;
@@ -1959,10 +1950,6 @@ int SessionAlsaUtils::close(Stream * streamHandle, std::shared_ptr<ResourceManag
         }
     }
     status = rmHandle->getVirtualAudioMixer(&mixerHandle);
-    if (status) {
-       PAL_ERR(LOG_TAG, "Error: Failed to get mixer handle\n");
-       return status;
-    }
     if (mixerHandle == nullptr) {
         PAL_ERR(LOG_TAG, "mixerHandle is null");
         goto exit;

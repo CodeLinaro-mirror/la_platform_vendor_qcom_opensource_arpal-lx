@@ -26,9 +26,9 @@
 <!-- OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN    -->
 <!-- IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                             -->
 <!--                                                                           -->
-<!-- Changes from Qualcomm Innovation Center are provided under the following license: -->
-<!-- Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.          -->
-<!-- SPDX-License-Identifier: BSD-3-Clause-Clear                                       -->
+<!-- Changes from Qualcomm Technologies, Inc. are provided under the following license: -->
+<!-- Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries. -->
+<!-- SPDX-License-Identifier: BSD-3-Clause-Clear -->
 
 <graph_key_value_pair_info>
     <streams>
@@ -544,6 +544,18 @@
                 <graph_kv key="0xB4000000" value="0xB4000001"/>
                 <!-- BT_FORMAT - LC3 -->
                 <graph_kv key="0xB5000000" value="0xB5000005"/>
+            </keys_and_values>
+        </device>
+        <device id="PAL_DEVICE_OUT_DUMMY">
+            <keys_and_values>
+                <!-- DEVICERX - DUMMY_RX -->
+                <graph_kv key="0xA2000000" value="0xA200000C"/>
+            </keys_and_values>
+        </device>
+        <device id="PAL_DEVICE_IN_DUMMY">
+            <keys_and_values>
+                <!-- DEVICETX - DUMMY_TX -->
+                <graph_kv key="0xA3000000" value="0xA3000010"/>
             </keys_and_values>
         </device>
     </devices>
